@@ -1,5 +1,6 @@
 #include <ShadeGL.h>
 #include <Shader.h>
+#include <Camera.h>
 
 #define WIDTH 1280
 #define HEIGHT 720
@@ -105,6 +106,9 @@ int main() {
     // Handle Shaders
     Shader shader("../shaders/fragment.glsl", "../shaders/vertex.glsl");
 
+    // Camera
+    Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, 0.0f, 2.0f));
+
     // Run main loop until user terminates the window
     while (!glfwWindowShouldClose(window)) {
         /**
@@ -113,6 +117,8 @@ int main() {
         // Handle Shaders
         shader.use();
 
+        camera.matrix(45.0f, 0.1f, 100.f, shader, "camMatrix");
+        camera.inputs(window);
 
         /**
          * Check for user inputs

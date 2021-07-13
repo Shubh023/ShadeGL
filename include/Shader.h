@@ -28,7 +28,6 @@ public:
         glUniform1f(glGetUniformLocation(programID, name.c_str()), value);
     }
 
-protected:
     unsigned int programID;
 };
 
