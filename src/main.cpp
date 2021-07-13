@@ -1,6 +1,10 @@
 #include <ShadeGL.h>
 #include <Shader.h>
 #include <Camera.h>
+#include <VBO.h>
+#include <VAO.h>
+#include <EBO.h>
+
 
 #define WIDTH 1280
 #define HEIGHT 720
@@ -9,6 +13,25 @@ GLFWwindow* window;
 GLFWmonitor* monitor;
 bool running, fullscreen;
 std::map<int, key> keyMap;
+
+// Vertices coordinates
+GLfloat vertices[] =
+{
+        -0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f, // Lower left corner
+        0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f, // Lower right corner
+        0.0f, 0.5f * float(sqrt(3)) * 2 / 3, 0.0f, // Upper corner
+        -0.5f / 2, 0.5f * float(sqrt(3)) / 6, 0.0f, // Inner left
+        0.5f / 2, 0.5f * float(sqrt(3)) / 6, 0.0f, // Inner right
+        0.0f, -0.5f * float(sqrt(3)) / 3, 0.0f // Inner down
+};
+
+// Indices for vertices order
+GLuint indices[] =
+{
+        0, 3, 5, // Lower left triangle
+        3, 2, 4, // Lower right triangle
+        5, 4, 1 // Upper triangle
+};
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
@@ -80,28 +103,14 @@ int main() {
     running = true; // States if program is running or not
     fullscreen = false; // States if program should be in fullscreen or not
 
-    // Vertices
-    float vertices[] = {
-            // positions         // colors
-            0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
-            -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
-            0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top
-    };
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    // color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+    VAO vao1;
+    vao1.Bind();
+    VBO vbo1(vertices, sizeof(vertices));
+    EBO ebo1(indices, sizeof(indices));
+    vao1.LinkVBO(vbo1, 0);
+    vao1.Unbind();
+    vbo1.Unbind();
+    ebo1.Unbind();
 
     // Handle Shaders
     Shader shader("../shaders/fragment.glsl", "../shaders/vertex.glsl");
@@ -135,15 +144,22 @@ int main() {
 
         glClearError();
         // DRAW | Render SOMETHING
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        vao1.Bind();
+        glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
         glCheckError();
 
         // Swap buffers
         glfwSwapBuffers(window);
     }
+    // Call Delete()
+    vao1.Delete();
+    vbo1.Delete();
+    ebo1.Delete();
+    shader.Delete();
+
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
 }
+
 

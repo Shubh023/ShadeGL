@@ -12,7 +12,7 @@ find_package(glfw3 REQUIRED)
 include_directories(include ${OPENGL_INCLUDE_DIRS}  ${GLEW_LIBRARY})
 
 # ShadeGL Executable
-add_executable(ShadeGL src/main.cpp include/ShadeGL.h src/Shader.cpp include/Shader.h src/Camera.cpp include/Camera.h)
+add_executable(ShadeGL src/main.cpp include/ShadeGL.h src/Shader.cpp include/Shader.h src/Camera.cpp include/Camera.h include/VBO.h src/VBO.cpp src/VAO.cpp include/VAO.h src/EBO.cpp include/EBO.h)
 
 # Link
 target_link_libraries(${PROJECT_NAME} -lGL -lGLU -lGLEW -lglfw -lpthread)
