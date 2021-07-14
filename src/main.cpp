@@ -4,7 +4,7 @@
 #include <VBO.h>
 #include <VAO.h>
 #include <EBO.h>
-
+#include <Texture.h>
 
 #define WIDTH 1280
 #define HEIGHT 720
@@ -14,24 +14,28 @@ GLFWmonitor* monitor;
 bool running, fullscreen;
 std::map<int, key> keyMap;
 
+
 // Vertices coordinates
 GLfloat vertices[] =
-{
-        -0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f, // Lower left corner
-        0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f, // Lower right corner
-        0.0f, 0.5f * float(sqrt(3)) * 2 / 3, 0.0f, // Upper corner
-        -0.5f / 2, 0.5f * float(sqrt(3)) / 6, 0.0f, // Inner left
-        0.5f / 2, 0.5f * float(sqrt(3)) / 6, 0.0f, // Inner right
-        0.0f, -0.5f * float(sqrt(3)) / 3, 0.0f // Inner down
-};
+        { //     COORDINATES     /        COLORS      /   TexCoord  //
+                -0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f,	0.0f, 0.0f,
+                -0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	5.0f, 0.0f,
+                0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	0.0f, 0.0f,
+                0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f,	5.0f, 0.0f,
+                0.0f, 0.8f,  0.0f,     0.92f, 0.86f, 0.76f,	2.5f, 5.0f
+        };
 
 // Indices for vertices order
 GLuint indices[] =
-{
-        0, 3, 5, // Lower left triangle
-        3, 2, 4, // Lower right triangle
-        5, 4, 1 // Upper triangle
-};
+        {
+                0, 1, 2,
+                0, 2, 3,
+                0, 1, 4,
+                1, 2, 4,
+                2, 3, 4,
+                3, 0, 4
+        };
+
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
@@ -54,7 +58,6 @@ void input() {
     }
     keyMap[GLFW_KEY_F].prev = glfwGetKey(window, GLFW_KEY_F);
 }
-
 
 
 int main() {
@@ -103,20 +106,30 @@ int main() {
     running = true; // States if program is running or not
     fullscreen = false; // States if program should be in fullscreen or not
 
+    // Handle Shaders
+    Shader shader("../shaders/fragment.glsl", "../shaders/vertex.glsl");
+
+    // Handle VAO, VBO, EBO
     VAO vao1;
     vao1.Bind();
     VBO vbo1(vertices, sizeof(vertices));
     EBO ebo1(indices, sizeof(indices));
-    vao1.LinkVBO(vbo1, 0);
+    vao1.LinkAttrib(vbo1, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+    vao1.LinkAttrib(vbo1, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    vao1.LinkAttrib(vbo1, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     vao1.Unbind();
     vbo1.Unbind();
     ebo1.Unbind();
 
-    // Handle Shaders
-    Shader shader("../shaders/fragment.glsl", "../shaders/vertex.glsl");
+    // Texture
+    Texture tex("../resources/512.jpg", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
+    tex.texUnit(shader, "tex0", 0);
+
+    // Uniforms
+    GLuint uniID = glGetUniformLocation(shader.programID, "scale");
 
     // Camera
-    Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, 0.0f, 2.0f));
+    Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, 0.0f, 10.0f), 0.075, 75.f);
 
     // Run main loop until user terminates the window
     while (!glfwWindowShouldClose(window)) {
@@ -126,9 +139,16 @@ int main() {
         // Handle Shaders
         shader.use();
 
-        camera.matrix(45.0f, 0.1f, 100.f, shader, "camMatrix");
-        camera.inputs(window);
+        // Uniform
+        glUniform1f(uniID, 0.65f);
 
+        // Texture
+        tex.Bind();
+
+        // Camera
+        camera.inputs(window);
+        camera.matrix(shader, "camMatrix");
+        camera.updateMatrix(45.0f, 0.1f, 100.0f);
         /**
          * Check for user inputs
          */
@@ -145,7 +165,7 @@ int main() {
         glClearError();
         // DRAW | Render SOMETHING
         vao1.Bind();
-        glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
         glCheckError();
 
         // Swap buffers
@@ -155,6 +175,7 @@ int main() {
     vao1.Delete();
     vbo1.Delete();
     ebo1.Delete();
+    tex.Delete();
     shader.Delete();
 
     glfwDestroyWindow(window);

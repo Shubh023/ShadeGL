@@ -16,16 +16,17 @@ class Camera {
 public:
 
     Camera(int _width, int _height, glm::vec3 _position);
+    Camera(int _width, int _height, glm::vec3 _position, float speed, float sensitivity);
 
-    void matrix(float fov, float nearPlane, float farPlane, Shader& shader, const char* uniform);
-
+    void matrix(Shader &shader, const char *uniform);
     void inputs(GLFWwindow* window);
+    void updateMatrix(float fov, float nearPlane, float farPlane);
 
+    // Attributes
     glm::vec3 position;
     glm::vec3 orientation = glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-
-
+    glm::mat4 cameraMatrix = glm::mat4(1.0f);
     int width;
     int height;
     bool firstClick = true;
