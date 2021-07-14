@@ -2,18 +2,21 @@
 #include <Mesh.h>
 #include <models/floor.h>
 #include <models/box.h>
+#include <models/rectangle.h>
 #include <models/skybox.h>
-#define WIDTH 1920
-#define HEIGHT 1080
 
+#define ENABLE_SKYBOX 1
+#define ENABLE_FULLSCREEN 0
 
 GLFWwindow* window;
 GLFWmonitor* monitor;
-bool running, fullscreen;
+bool running;
 std::map<int, key> keyMap;
 
+unsigned int window_width = 1980;
+unsigned int window_height = 1080;
 
-
+unsigned int samples = 8;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -25,15 +28,6 @@ void input() {
         running = false;
         glfwSetWindowShouldClose(window, 1);
     }
-
-    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && keyMap[GLFW_KEY_F].prev) {
-        if (!fullscreen)
-            glfwSetWindowMonitor(window, monitor, 0, 0, WIDTH, HEIGHT, 0);
-        if (fullscreen)
-            glfwSetWindowMonitor(window, NULL, 0, 0, WIDTH, HEIGHT, 0);
-        fullscreen = !fullscreen;
-    }
-    keyMap[GLFW_KEY_F].prev = glfwGetKey(window, GLFW_KEY_F);
 }
 
 
@@ -42,8 +36,7 @@ int main() {
     std::cout << "Hello, Welcome to ShadeGL !" << std::endl;
 
     // Setup GLFW
-    glfwWindowHint(GLFW_SAMPLES, 4);
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 
     // Init GLFW
@@ -54,8 +47,19 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+    // Setup Monitor to Primary
+    monitor = glfwGetPrimaryMonitor();
+    running = true; // States if program is running or not
+
+    if (ENABLE_FULLSCREEN) {
+        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+        window_width = mode->width;
+        window_height = mode->height;
+    }
+    std::cout <<  "Using Window Size : " <<  window_width << " x " << window_height << std::endl;
+
     // Create Window
-    window = glfwCreateWindow(WIDTH, HEIGHT, "ShadeGL", NULL, NULL);
+    window = glfwCreateWindow(window_width, window_height, "ShadeGL", NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to open window GLFW" << std::endl;
         glfwTerminate();
@@ -76,11 +80,6 @@ int main() {
 
     // Display used OpenGL Version
     std::cout << glGetString(GL_VERSION) << std::endl;
-
-    // Setup Monitor to Primary
-    monitor = glfwGetPrimaryMonitor();
-    running = true; // States if program is running or not
-    fullscreen = false; // States if program should be in fullscreen or not
 
     // Handle Textures
     Texture textures[] {
@@ -121,71 +120,57 @@ int main() {
     glUniform3f(glGetUniformLocation(shader.programID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 
     // Handle Skybox
-    // Create VAO, VBO, and EBO for the skybox
-    Shader skyboxShader("../shaders/skybox_fragment.glsl", "../shaders/skybox_vertex.glsl");
-    skyboxShader.use();
-    glUniform1i(glGetUniformLocation(skyboxShader.programID, "skybox"), 0);
-
+    Shader skyboxshader("../shaders/skybox_fragment.glsl", "../shaders/skybox_vertex.glsl");
     unsigned int skyboxVAO, skyboxVBO, skyboxEBO;
-    glGenVertexArrays(1, &skyboxVAO);
-    glGenBuffers(1, &skyboxVBO);
-    glGenBuffers(1, &skyboxEBO);
-    glBindVertexArray(skyboxVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyboxEBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(skyboxIndices), &skyboxIndices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
     // Creates the cubemap texture object
     unsigned int cubemapTexture;
-    glGenTextures(1, &cubemapTexture);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    // These are very important to prevent seams
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    if (ENABLE_SKYBOX) {
+        // Create VAO, VBO, and EBO for the skybox
+        skyboxshader.use();
+        glUniform1i(glGetUniformLocation(skyboxshader.programID, "skybox"), 0);
+        glGenVertexArrays(1, &skyboxVAO);
+        glGenBuffers(1, &skyboxVBO);
+        glGenBuffers(1, &skyboxEBO);
+        glBindVertexArray(skyboxVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyboxEBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(skyboxIndices), &skyboxIndices, GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    // Cycles through all the textures and attaches them to the cubemap object
-    for (unsigned int i = 0; i < 6; i++)
-    {
-        int width, height, nrChannels;
-        unsigned char* data = stbi_load(facesCubemap[i].c_str(), &width, &height, &nrChannels, 0);
-        if (data)
-        {
-            stbi_set_flip_vertically_on_load(false);
-            glTexImage2D
-                    (
-                            GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                            0,
-                            GL_RGB,
-                            width,
-                            height,
-                            0,
-                            GL_RGB,
-                            GL_UNSIGNED_BYTE,
-                            data
-                    );
-            stbi_image_free(data);
+
+        glGenTextures(1, &cubemapTexture);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+        for (unsigned int i = 0; i < 6; i++) {
+            int width, height, nrChannels;
+            unsigned char *data = stbi_load(facesCubemap[i].c_str(), &width, &height, &nrChannels, 0);
+            if (data) {
+                stbi_set_flip_vertically_on_load(false);
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                stbi_image_free(data);
+            } else {
+                std::cout << "Failed to load skybox texture: " << facesCubemap[i] << std::endl;
+                stbi_image_free(data);
+            }
         }
-        else
-        {
-            std::cout << "Failed to load texture: " << facesCubemap[i] << std::endl;
-            stbi_image_free(data);
-        }
+
     }
-
     // Uniforms
     GLuint uniID = glGetUniformLocation(shader.programID, "scale");
 
     // Camera
-    Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, 1.0f, 2.0f)); //, 0.075, 75.f);
+    Camera camera(window_width, window_height, glm::vec3(0.0f, 1.0f, 2.0f)); //, 0.075, 75.f);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -202,6 +187,71 @@ int main() {
 
     int vsync = 1;
     glfwSwapInterval(vsync); // Enable or Disable VSYNC
+
+
+    // PREPARE FRAMEBUFFER
+    Shader framebuffershader("../shaders/framebuffer_fragment.glsl", "../shaders/framebuffer_vertex.glsl");
+    framebuffershader.use();
+    glUniform1i(glGetUniformLocation(framebuffershader.programID, "screenTexture"), 0);
+
+    unsigned int rectVAO, rectVBO;
+    glGenVertexArrays(1, &rectVAO);
+    glGenBuffers(1, &rectVBO);
+    glBindVertexArray(rectVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, rectVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(rectangle_vertices), &rectangle_vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+    unsigned int FBO;
+    glGenFramebuffers(1, &FBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
+    unsigned int framebufferTexture;
+    glGenTextures(1, &framebufferTexture);
+    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, framebufferTexture);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, window_width, window_height, GL_TRUE);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, framebufferTexture, 0);
+
+    // Create Render Buffer Object
+    unsigned int RBO;
+    glGenRenderbuffers(1, &RBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH24_STENCIL8, window_width, window_height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+
+    // Error checking framebuffer
+    auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (fboStatus != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Framebuffer error: " << fboStatus << std::endl;
+
+
+    // Create Frame Buffer Object
+    unsigned int postProcessingFBO;
+    glGenFramebuffers(1, &postProcessingFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, postProcessingFBO);
+
+    // Create Framebuffer Texture
+    unsigned int postProcessingTexture;
+    glGenTextures(1, &postProcessingTexture);
+    glBindTexture(GL_TEXTURE_2D, postProcessingTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, postProcessingTexture, 0);
+
+    // Error checking framebuffer
+    fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (fboStatus != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Post-Processing Framebuffer error: " << fboStatus << std::endl;
 
     // Run main loop until user terminates the window
     while (!glfwWindowShouldClose(window)) {
@@ -225,9 +275,18 @@ int main() {
             }
         }
 
+        int sizex, sizey;
+        glfwGetFramebufferSize(window, &sizex, &sizey);
+
+        // Binding FrameBuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, FBO);
         // Clear Window with clear color
-        glClearColor(0.05f, 0.03f, 0.0f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Enable DEPTH_TEST
+        glEnable(GL_DEPTH_TEST);
+
 
         if (vsync) {
             // Check for user inputs
@@ -235,7 +294,7 @@ int main() {
             camera.inputs(window);
         }
 
-        glUniform1f(uniID, 0.5f);
+        glUniform1f(uniID, 5.f);
         camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
         // DRAW | Render SOMETHING
@@ -244,37 +303,56 @@ int main() {
         light.Draw(lightshader, camera);
         glCheckError();
 
-        // Since the cubemap will always have a depth of 1.0, we need that equal sign so it doesn't get discarded
-        glDepthFunc(GL_LEQUAL);
+        glClearError();
+        if (ENABLE_SKYBOX) {
+            // Since the cubemap will always have a depth of 1.0, we need that equal sign so it doesn't get discarded
+            glDepthFunc(GL_LEQUAL);
+            skyboxshader.use();
+            glm::mat4 view = glm::mat4(1.0f);
+            glm::mat4 projection = glm::mat4(1.0f);
+            // We make the mat4 into a mat3 and then a mat4 again in order to get rid of the last row and column
+            // The last row and column affect the translation of the skybox (which we don't want to affect)
+            view = glm::mat4(glm::mat3(glm::lookAt(camera.position, camera.position + camera.orientation, camera.up)));
+            projection = glm::perspective(glm::radians(45.0f), (float) window_width / window_width, 0.1f, 100.0f);
+            glUniformMatrix4fv(glGetUniformLocation(skyboxshader.programID, "view"), 1, GL_FALSE, glm::value_ptr(view));
+            glUniformMatrix4fv(glGetUniformLocation(skyboxshader.programID, "projection"), 1, GL_FALSE,
+                               glm::value_ptr(projection));
 
-        skyboxShader.use();
-        glm::mat4 view = glm::mat4(1.0f);
-        glm::mat4 projection = glm::mat4(1.0f);
-        // We make the mat4 into a mat3 and then a mat4 again in order to get rid of the last row and column
-        // The last row and column affect the translation of the skybox (which we don't want to affect)
-        view = glm::mat4(glm::mat3(glm::lookAt(camera.position, camera.position + camera.orientation, camera.up)));
-        projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / HEIGHT, 0.1f, 100.0f);
-        glUniformMatrix4fv(glGetUniformLocation(skyboxShader.programID, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(glGetUniformLocation(skyboxShader.programID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+            // Draws the cubemap as the last object so we can save a bit of performance by discarding all fragments
+            // where an object is present (a depth of 1.0f will always fail against any object's depth value)
+            glBindVertexArray(skyboxVAO);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+            glBindVertexArray(0);
+            // Switch back to the normal depth function
+            glDepthFunc(GL_LESS);
+            glDepthMask(GL_TRUE);
+        }
 
-        // Draws the cubemap as the last object so we can save a bit of performance by discarding all fragments
-        // where an object is present (a depth of 1.0f will always fail against any object's depth value)
-        glBindVertexArray(skyboxVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, postProcessingFBO);
+        glBlitFramebuffer(0,0, window_width, window_height, 0, 0, window_width, window_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-        // Switch back to the normal depth function
-        glDepthFunc(GL_LESS);
+        // Bind the default framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // Draw the framebuffer rectangle
+        framebuffershader.use();
+        glBindVertexArray(rectVAO);
+        glDisable(GL_DEPTH_TEST);
+        glBindTexture(GL_TEXTURE_2D, postProcessingTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // Swap buffers
         glfwSwapBuffers(window);
     }
     // Call Delete()
     shader.Delete();
-    skyboxShader.Delete();
+    skyboxshader.Delete();
+    framebuffershader.Delete();
     lightshader.Delete();
+    glDeleteFramebuffers(1, &FBO);
+    glDeleteFramebuffers(1, &postProcessingFBO);
 
     glfwDestroyWindow(window);
     glfwTerminate();

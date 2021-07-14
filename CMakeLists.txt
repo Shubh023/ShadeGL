@@ -11,7 +11,7 @@ find_package(glfw3 REQUIRED)
 # Include Directories
 include_directories(include ${OPENGL_INCLUDE_DIRS}  ${GLEW_LIBRARY})
 
-set(SOURCE_FILES src/main.cpp src/Shader.cpp src/Camera.cpp src/VBO.cpp src/VAO.cpp src/EBO.cpp src/Texture.cpp src/image.cpp src/image_io.cpp src/stb.cpp src/Mesh.cpp include/models/floor.h include/models/skybox.h include/models/box.h)
+set(SOURCE_FILES src/main.cpp src/Shader.cpp src/Camera.cpp src/VBO.cpp src/VAO.cpp src/EBO.cpp src/Texture.cpp src/image.cpp src/image_io.cpp src/stb.cpp src/Mesh.cpp include/models/floor.h include/models/skybox.h include/models/box.h include/models/sphere.h include/models/rectangle.h)
 
 # ShadeGL Executable
 add_executable(ShadeGL ${SOURCE_FILES})
