@@ -5,14 +5,13 @@
 #include <models/rectangle.h>
 #include <models/skybox.h>
 
-#define ENABLE_SKYBOX 1
-#define ENABLE_FULLSCREEN 0
+#define ENABLE_SKYBOX 0
+#define ENABLE_FULLSCREEN 1
+#define VSYNC 1
 
 GLFWwindow* window;
 GLFWmonitor* monitor;
 bool running;
-std::map<int, key> keyMap;
-
 unsigned int window_width = 1980;
 unsigned int window_height = 1080;
 
@@ -35,14 +34,12 @@ int main() {
     // Greet on the terminal
     std::cout << "Hello, Welcome to ShadeGL !" << std::endl;
 
-    // Setup GLFW
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-
     // Init GLFW
     if (!glfwInit())
     std::cout << "Failed to initialize GLFW" << std::endl;
 
+    // Setup GLFW
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -51,6 +48,7 @@ int main() {
     monitor = glfwGetPrimaryMonitor();
     running = true; // States if program is running or not
 
+    // Handle case where we want to render at the maximum monitor resolution aka Fullscreen :-)
     if (ENABLE_FULLSCREEN) {
         const GLFWvidmode* mode = glfwGetVideoMode(monitor);
         window_width = mode->width;
@@ -58,7 +56,7 @@ int main() {
     }
     std::cout <<  "Using Window Size : " <<  window_width << " x " << window_height << std::endl;
 
-    // Create Window
+    // Create GLFW Window
     window = glfwCreateWindow(window_width, window_height, "ShadeGL", NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to open window GLFW" << std::endl;
@@ -81,29 +79,43 @@ int main() {
     // Display used OpenGL Version
     std::cout << glGetString(GL_VERSION) << std::endl;
 
-    // Handle Textures
-    Texture textures[] {
+    /**
+     * Handle Textures
+     */
+    Texture floor_textures[] {
         Texture("../resources/planks.png", "diffuse", 0, GL_RGBA, GL_UNSIGNED_BYTE),
         Texture("../resources/planks_spec.png", "specular", 1, GL_RED, GL_UNSIGNED_BYTE)
     };
 
-    // Handle Floor
+    /**
+     * Handle Meshes and other objects
+     */
+    // Handle Floor Mesh
     Shader shader("../shaders/fragment.glsl", "../shaders/vertex.glsl");
-    std::vector <Vertex> verts(floor_v, floor_v + sizeof(floor_v) / sizeof(Vertex));
-    std::vector <GLuint> ind(floor_i, floor_i + sizeof(floor_i) / sizeof(GLuint));
-    std::vector <Texture> tex(textures, textures + sizeof(textures) / sizeof(Texture));
-    Mesh floor(verts, ind, tex);
+    std::vector <Vertex> floor_verts(floor_v, floor_v + sizeof(floor_v) / sizeof(Vertex));
+    std::vector <GLuint> floor_ind(floor_i, floor_i + sizeof(floor_i) / sizeof(GLuint));
+    std::vector <Texture> floor_tex(floor_textures, floor_textures + sizeof(floor_textures) / sizeof(Texture));
+    Mesh floor(floor_verts, floor_ind, floor_tex);
+
+    /*
+    // Handle cube mesh
+    Shader cube_shader("../shaders/box_fragment.glsl", "../shaders/box_vertex.glsl");
+    std::vector <Vertex> boxVerts(box_vertices, box_vertices + sizeof(box_vertices) / sizeof(Vertex));
+    std::vector <GLuint> boxInd(box_indices, box_indices + sizeof(box_indices) / sizeof(GLuint));
+    std::vector <Texture> box_tex(box_textures, box_textures + sizeof(box_textures) / sizeof(Texture));
+    Mesh cube(boxVerts, boxInd, box_tex);
+    */
 
     // Handle Light Source
     Shader lightshader("../shaders/light_fragment.glsl", "../shaders/light_vertex.glsl");
     std::vector <Vertex> lightVerts(box_vertices, box_vertices + sizeof(box_vertices) / sizeof(Vertex));
     std::vector <GLuint> lightInd(box_indices, box_indices + sizeof(box_indices) / sizeof(GLuint));
-    Mesh light(lightVerts, lightInd, tex);
+    Mesh light(lightVerts, lightInd, floor_tex);
 
 
     // Handle Lighting
     glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    glm::vec3 lightPos = glm::vec3(0.f, 1.f, 0.f);
+    glm::vec3 lightPos = glm::vec3(0.f, 0.75f, 0.f);
     glm::mat4 lightModel = glm::mat4(1.0f);
     lightModel = glm::translate(lightModel, lightPos);
 
@@ -133,15 +145,14 @@ int main() {
         glGenBuffers(1, &skyboxEBO);
         glBindVertexArray(skyboxVAO);
         glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(skybox_vertices), &skybox_vertices, GL_STATIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyboxEBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(skyboxIndices), &skyboxIndices, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(skybox_indices), &skybox_indices, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
 
         glGenTextures(1, &cubemapTexture);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
@@ -164,36 +175,45 @@ int main() {
                 stbi_image_free(data);
             }
         }
-
     }
+
     // Uniforms
     GLuint uniID = glGetUniformLocation(shader.programID, "scale");
 
-    // Camera
+    // Camera Initialization
     Camera camera(window_width, window_height, glm::vec3(0.0f, 1.0f, 2.0f)); //, 0.075, 75.f);
 
+    /**
+     * Toogle GL Features
+     */
+    // Enabling DEPTH
     glEnable(GL_DEPTH_TEST);
+    // Set GL_LESS as depth function to be used
     glDepthFunc(GL_LESS);
+    // Enabling Face culling ot front and setting it to CounterClockWise mode
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
+    // Enable Multisampling
     glEnable(GL_MULTISAMPLE);
+    // Enables Gamma Correction
+    // glEnable(GL_FRAMEBUFFER_SRGB);
 
-
-    // Metrics
-    double prev = 0.0;
-    double curr = 0.0;
-    double diff;
+    // Attributes to store Metrics for fps counter
+    double prev = 0.0, curr = 0.0, diff;
     unsigned int ct = 0;
 
-    int vsync = 1;
-    glfwSwapInterval(vsync); // Enable or Disable VSYNC
+    glfwSwapInterval(VSYNC); // Enable or Disable VSYNC
 
 
-    // PREPARE FRAMEBUFFER
+    /**
+     * PREPARE FRAMEBUFFER
+     */
+    // Handle Shader Part
     Shader framebuffershader("../shaders/framebuffer_fragment.glsl", "../shaders/framebuffer_vertex.glsl");
     framebuffershader.use();
     glUniform1i(glGetUniformLocation(framebuffershader.programID, "screenTexture"), 0);
 
+    // Handle VAO & VBO for rectangle used to display the frames
     unsigned int rectVAO, rectVBO;
     glGenVertexArrays(1, &rectVAO);
     glGenBuffers(1, &rectVBO);
@@ -205,12 +225,16 @@ int main() {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
+    // Creating a Frame Buffer
     unsigned int FBO;
     glGenFramebuffers(1, &FBO);
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
+    // Creating a Frame Buffer to be applied on the rectangle
     unsigned int framebufferTexture;
     glGenTextures(1, &framebufferTexture);
+
+    // To take full advantage of framebuffer we can use Multisampling
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, framebufferTexture);
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, GL_RGB, window_width, window_height, GL_TRUE);
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -219,67 +243,68 @@ int main() {
     glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, framebufferTexture, 0);
 
-    // Create Render Buffer Object
+    // Creating Render Buffer
     unsigned int RBO;
     glGenRenderbuffers(1, &RBO);
     glBindRenderbuffer(GL_RENDERBUFFER, RBO);
     glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH24_STENCIL8, window_width, window_height);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
 
-    // Error checking framebuffer
-    auto fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (fboStatus != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "Framebuffer error: " << fboStatus << std::endl;
+    // Check Framebuffer
+    if (auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Got an error with status : " << status << ", check on framebuffer FBO " << std::endl;
 
+    // Create additional Frame Buffer to copy resulting FrameBuffer from the previous made multisampling framebuffer
+    unsigned int FBO2;
+    glGenFramebuffers(1, &FBO2);
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO2);
 
-    // Create Frame Buffer Object
-    unsigned int postProcessingFBO;
-    glGenFramebuffers(1, &postProcessingFBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, postProcessingFBO);
-
-    // Create Framebuffer Texture
-    unsigned int postProcessingTexture;
-    glGenTextures(1, &postProcessingTexture);
-    glBindTexture(GL_TEXTURE_2D, postProcessingTexture);
+    // Create Texture for our rectangle that will display the output of our framebuffer FBO2
+    unsigned int rect_texture;
+    glGenTextures(1, &rect_texture);
+    glBindTexture(GL_TEXTURE_2D, rect_texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, postProcessingTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rect_texture, 0);
 
-    // Error checking framebuffer
-    fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (fboStatus != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "Post-Processing Framebuffer error: " << fboStatus << std::endl;
+    // Check Framebuffer 2
+    if (auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Got an error with status : " << status << ", check on framebuffer FBO2 " << std::endl;
 
-    // Run main loop until user terminates the window
+    // Run main loop until we terminate the window
     while (!glfwWindowShouldClose(window)) {
 
+        // Get FPS metrics
         curr = glfwGetTime();
         diff = curr - prev;
         ct++;
-        if (diff >= 1.0 / 30.0)
-        {
-            std::string FPS = std::to_string((1.0 / diff) * ct);
-            std::string ms = std::to_string((diff / ct) * 1000);
-            std::string title = "ShadeGL : " + FPS + " FPS " + ms + "ms";
-            glfwSetWindowTitle(window, title.c_str());
 
+        // Wait until a few milliseconds to get some frames done in order to estimate the FPS metrics
+        if (diff >= 1.0 / 60.0)
+        {
+            std::string fps = std::to_string((1.0 / diff) * ct);
+            std::string ms = std::to_string((diff / ct) * 1000);
+            std::string window_title = "ShadeGL at " + fps + " FPS " + " in " + ms + "ms";
+            glfwSetWindowTitle(window, window_title.c_str());
+
+            // Reset counter and update previous time to current
             prev = curr;
             ct = 0;
-            if (!vsync) {
+
+            // Handle case where VSYNC is disabled
+            if (!VSYNC) {
                 // Check for user inputs
                 input();
                 camera.inputs(window);
             }
         }
 
-        int sizex, sizey;
-        glfwGetFramebufferSize(window, &sizex, &sizey);
-
         // Binding FrameBuffer
         glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
         // Clear Window with clear color
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -287,14 +312,17 @@ int main() {
         // Enable DEPTH_TEST
         glEnable(GL_DEPTH_TEST);
 
-
-        if (vsync) {
-            // Check for user inputs
+        // Handle VSYNC CASE
+        if (VSYNC) {
+            // Check for user inputs for the window as well as the camera
             input();
             camera.inputs(window);
         }
 
+        // Scale Factor
         glUniform1f(uniID, 5.f);
+
+        // Update Camera Matrix
         camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
         // DRAW | Render SOMETHING
@@ -303,56 +331,63 @@ int main() {
         light.Draw(lightshader, camera);
         glCheckError();
 
-        glClearError();
+
         if (ENABLE_SKYBOX) {
-            // Since the cubemap will always have a depth of 1.0, we need that equal sign so it doesn't get discarded
+            // For this skybox we want to use GL_LEQUAL for the depth function
             glDepthFunc(GL_LEQUAL);
+            // Use of skybox shader
             skyboxshader.use();
+            // Handle Skybox projection on cubemap
             glm::mat4 view = glm::mat4(1.0f);
             glm::mat4 projection = glm::mat4(1.0f);
-            // We make the mat4 into a mat3 and then a mat4 again in order to get rid of the last row and column
-            // The last row and column affect the translation of the skybox (which we don't want to affect)
             view = glm::mat4(glm::mat3(glm::lookAt(camera.position, camera.position + camera.orientation, camera.up)));
-            projection = glm::perspective(glm::radians(45.0f), (float) window_width / window_width, 0.1f, 100.0f);
+            projection = glm::perspective(glm::radians(45.0f), (float) window_width / window_height, 0.1f, 100.0f);
             glUniformMatrix4fv(glGetUniformLocation(skyboxshader.programID, "view"), 1, GL_FALSE, glm::value_ptr(view));
-            glUniformMatrix4fv(glGetUniformLocation(skyboxshader.programID, "projection"), 1, GL_FALSE,
-                               glm::value_ptr(projection));
-
-            // Draws the cubemap as the last object so we can save a bit of performance by discarding all fragments
-            // where an object is present (a depth of 1.0f will always fail against any object's depth value)
+            glUniformMatrix4fv(glGetUniformLocation(skyboxshader.programID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
             glBindVertexArray(skyboxVAO);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-            glBindVertexArray(0);
-            // Switch back to the normal depth function
-            glDepthFunc(GL_LESS);
-            glDepthMask(GL_TRUE);
         }
 
+        glActiveTexture(GL_TEXTURE0);
+        if (ENABLE_SKYBOX) {
+            glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+            // Draw 2 triangles for each of the 6 faces = Total 36 Triangles
+            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+            glBindVertexArray(0);
+        }
+
+        // Switch back to the normal depth function
+        glDepthFunc(GL_LESS);
+        glDepthMask(GL_TRUE);
+
+        // Set FBO as READ framebuffer as we want to get the multisampled frame and copy it into FBO2
         glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, postProcessingFBO);
+        // Setting FBO2 as Draw framebuffer
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO2);
+        // Copying FBO multisampled output to Final FBO2, because FBO2 will be displayed on the screen and not FBO
         glBlitFramebuffer(0,0, window_width, window_height, 0, 0, window_width, window_height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
         // Bind the default framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
         // Draw the framebuffer rectangle
         framebuffershader.use();
         glBindVertexArray(rectVAO);
+        // Disable Depth because the rectangleTexture doesn't need depth its only job to to display the output of FBO2
         glDisable(GL_DEPTH_TEST);
-        glBindTexture(GL_TEXTURE_2D, postProcessingTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindTexture(GL_TEXTURE_2D, rect_texture);
+        glDrawArrays(GL_TRIANGLES, 0, 6); // 6 vertices shared between 2 triangles
 
         // Swap buffers
         glfwSwapBuffers(window);
     }
     // Call Delete()
     shader.Delete();
-    skyboxshader.Delete();
+    if (ENABLE_SKYBOX)
+        skyboxshader.Delete();
     framebuffershader.Delete();
     lightshader.Delete();
     glDeleteFramebuffers(1, &FBO);
-    glDeleteFramebuffers(1, &postProcessingFBO);
+    glDeleteFramebuffers(1, &FBO2);
 
     glfwDestroyWindow(window);
     glfwTerminate();

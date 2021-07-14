@@ -17,12 +17,6 @@
 #include <iostream>
 #include <sstream>
 
-struct key {
-    bool cur, prev;
-};
-
-
-
 static void glClearError()
 {
     while (glGetError() != GL_NO_ERROR);
