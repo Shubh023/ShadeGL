@@ -6,8 +6,8 @@
 #include <EBO.h>
 #include <Texture.h>
 
-#define WIDTH 1280
-#define HEIGHT 720
+#define WIDTH 1920
+#define HEIGHT 1080
 
 GLFWwindow* window;
 GLFWmonitor* monitor;
@@ -17,25 +17,47 @@ std::map<int, key> keyMap;
 
 // Vertices coordinates
 GLfloat vertices[] =
-        { //     COORDINATES     /        COLORS      /   TexCoord  //
-                -0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f,	0.0f, 0.0f,
-                -0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	5.0f, 0.0f,
-                0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	0.0f, 0.0f,
-                0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f,	5.0f, 0.0f,
-                0.0f, 0.8f,  0.0f,     0.92f, 0.86f, 0.76f,	2.5f, 5.0f
+        { //     COORDINATES     /        COLORS        /    TexCoord    /       NORMALS     //
+                -1.0f, 0.0f,  1.0f,		0.0f, 0.0f, 0.0f,		0.0f, 0.0f,		0.0f, 1.0f, 0.0f,
+                -1.0f, 0.0f, -1.0f,		0.0f, 0.0f, 0.0f,		0.0f, 1.0f,		0.0f, 1.0f, 0.0f,
+                1.0f, 0.0f, -1.0f,		0.0f, 0.0f, 0.0f,		1.0f, 1.0f,		0.0f, 1.0f, 0.0f,
+                1.0f, 0.0f,  1.0f,		0.0f, 0.0f, 0.0f,		1.0f, 0.0f,		0.0f, 1.0f, 0.0f
         };
 
 // Indices for vertices order
 GLuint indices[] =
         {
                 0, 1, 2,
-                0, 2, 3,
-                0, 1, 4,
-                1, 2, 4,
-                2, 3, 4,
-                3, 0, 4
+                0, 2, 3
         };
 
+GLfloat lightVertices[] =
+        { //     COORDINATES     //
+                -0.1f, -0.1f,  0.1f,
+                -0.1f, -0.1f, -0.1f,
+                0.1f, -0.1f, -0.1f,
+                0.1f, -0.1f,  0.1f,
+                -0.1f,  0.1f,  0.1f,
+                -0.1f,  0.1f, -0.1f,
+                0.1f,  0.1f, -0.1f,
+                0.1f,  0.1f,  0.1f
+        };
+
+GLuint lightIndices[] =
+        {
+                0, 1, 2,
+                0, 2, 3,
+                0, 4, 7,
+                0, 7, 3,
+                3, 7, 6,
+                3, 6, 2,
+                2, 6, 5,
+                2, 5, 1,
+                1, 5, 4,
+                1, 4, 0,
+                4, 5, 6,
+                4, 6, 7
+        };
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
@@ -114,58 +136,93 @@ int main() {
     vao1.Bind();
     VBO vbo1(vertices, sizeof(vertices));
     EBO ebo1(indices, sizeof(indices));
-    vao1.LinkAttrib(vbo1, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
-    vao1.LinkAttrib(vbo1, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    vao1.LinkAttrib(vbo1, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    vao1.LinkAttrib(vbo1, 0, 3, GL_FLOAT, 11 * sizeof(float), (void*)0);
+    vao1.LinkAttrib(vbo1, 1, 3, GL_FLOAT, 11 * sizeof(float), (void*)(3 * sizeof(float)));
+    vao1.LinkAttrib(vbo1, 2, 2, GL_FLOAT, 11 * sizeof(float), (void*)(6 * sizeof(float)));
+    vao1.LinkAttrib(vbo1, 3, 3, GL_FLOAT, 11 * sizeof(float), (void*)(8 * sizeof(float)));
     vao1.Unbind();
     vbo1.Unbind();
     ebo1.Unbind();
 
+    // Shader for light cube
+    Shader lightShader("../shaders/light_fragment.glsl", "../shaders/light_vertex.glsl");
+    // Generates Vertex Array Object and binds it
+    VAO lightVAO;
+    lightVAO.Bind();
+    // Generates Vertex Buffer Object and links it to vertices
+    VBO lightVBO(lightVertices, sizeof(lightVertices));
+    // Generates Element Buffer Object and links it to indices
+    EBO lightEBO(lightIndices, sizeof(lightIndices));
+    // Links VBO attributes such as coordinates and colors to VAO
+    lightVAO.LinkAttrib(lightVBO, 0, 3, GL_FLOAT, 3 * sizeof(float), (void*)0);
+    // Unbind all to prevent accidentally modifying them
+    lightVAO.Unbind();
+    lightVBO.Unbind();
+    lightEBO.Unbind();
+
+
+
+    glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    glm::vec3 lightPos = glm::vec3(0.5f, 0.5f, 0.5f);
+    glm::mat4 lightModel = glm::mat4(1.0f);
+    lightModel = glm::translate(lightModel, lightPos);
+
+    glm::vec3 pyramidPos = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::mat4 pyramidModel = glm::mat4(1.0f);
+    pyramidModel = glm::translate(pyramidModel, pyramidPos);
+
+    lightShader.use();
+    glUniformMatrix4fv(glGetUniformLocation(lightShader.programID, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
+    glUniform4f(glGetUniformLocation(lightShader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
+    shader.use();
+    glUniformMatrix4fv(glGetUniformLocation(shader.programID, "model"), 1, GL_FALSE, glm::value_ptr(pyramidModel));
+    glUniform4f(glGetUniformLocation(shader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
+    glUniform3f(glGetUniformLocation(shader.programID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+
+
     // Texture
-    Texture tex("../resources/512.jpg", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
+    Texture tex("../resources/planks.png", GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE);
     tex.texUnit(shader, "tex0", 0);
+    Texture spectex("../resources/planks_spec.png", GL_TEXTURE_2D, 1, GL_RED, GL_UNSIGNED_BYTE);
+    tex.texUnit(shader, "tex1", 1);
+
+
 
     // Uniforms
     GLuint uniID = glGetUniformLocation(shader.programID, "scale");
 
     // Camera
-    Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, 0.0f, 10.0f), 0.075, 75.f);
+    Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, 1.0f, 2.0f), 0.075, 75.f);
 
     // Run main loop until user terminates the window
     while (!glfwWindowShouldClose(window)) {
-        /**
-         * Update Stuff on window
-         */
-        // Handle Shaders
-        shader.use();
-
-        // Uniform
-        glUniform1f(uniID, 0.65f);
-
-        // Texture
-        tex.Bind();
-
-        // Camera
-        camera.inputs(window);
-        camera.matrix(shader, "camMatrix");
-        camera.updateMatrix(45.0f, 0.1f, 100.0f);
-        /**
-         * Check for user inputs
-         */
-        input();
-
-
-        /**
-         * Render Stuff
-         */
         // Clear Window with clear color
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glClearError();
+        // Check for user inputs
+        input();
+        camera.inputs(window);
+
+        glUniform1f(uniID, 0.5f);
+        camera.updateMatrix(45.0f, 0.1f, 100.0f);
+
         // DRAW | Render SOMETHING
+        glClearError();
+        shader.use();
+        camera.matrix(shader, "camMatrix");
+        spectex.Bind();
+
+        tex.Bind();
         vao1.Bind();
         glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
+        glCheckError();
+
+        glClearError();
+        lightShader.use();
+        camera.matrix(lightShader, "camMatrix");
+        lightVAO.Bind();
+        glDrawElements(GL_TRIANGLES, sizeof(lightIndices) / sizeof(int), GL_UNSIGNED_INT, 0);
         glCheckError();
 
         // Swap buffers
@@ -176,7 +233,13 @@ int main() {
     vbo1.Delete();
     ebo1.Delete();
     tex.Delete();
+    spectex.Delete();
     shader.Delete();
+
+    lightVAO.Delete();
+    lightVBO.Delete();
+    lightEBO.Delete();
+    lightShader.Delete();
 
     glfwDestroyWindow(window);
     glfwTerminate();

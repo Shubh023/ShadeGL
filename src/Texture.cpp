@@ -11,9 +11,15 @@ Texture::Texture(const char* image, GLenum texType, GLenum slot, GLenum format, 
 
     // Stores the width, height, and the number of color channels of the image
     int widthImg, heightImg, numColCh;
-    // Flips the image so it appears right side up
-    stbi_set_flip_vertically_on_load(true);
+
     // Reads the image from a file and stores it in bytes
+    /*
+    auto loaded_img = tifo::load_image(image);
+    unsigned char* bytes = loaded_img->get_buffer();
+    widthImg = loaded_img->sx;
+    heightImg= loaded_img->sy;
+    numColCh = loaded_img->length;
+     */
     unsigned char* bytes = stbi_load(image, &widthImg, &heightImg, &numColCh, 0);
 
     // Generates an OpenGL texture object
@@ -31,15 +37,14 @@ Texture::Texture(const char* image, GLenum texType, GLenum slot, GLenum format, 
     glTexParameteri(texType, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     // Extra lines in case you choose to use GL_CLAMP_TO_BORDER
-    // float flatColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
-    // glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, flatColor);
+    float flatColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, flatColor);
 
     // Assigns the image to the OpenGL Texture object
     glTexImage2D(texType, 0, GL_RGBA, widthImg, heightImg, 0, format, pixelType, bytes);
     // Generates MipMaps
     glGenerateMipmap(texType);
 
-    // Deletes the image data as it is already in the OpenGL Texture object
     stbi_image_free(bytes);
 
     // Unbinds the OpenGL Texture object so that it can't accidentally be modified

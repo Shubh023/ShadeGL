@@ -7,6 +7,8 @@
 
 #include <ShadeGL.h>
 #include <Shader.h>
+#include <image.h>
+#include <image_io.h>
 #include <stb_image.h>
 
 class Texture {
