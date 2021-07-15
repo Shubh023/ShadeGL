@@ -6,8 +6,8 @@
 #include <models/skybox.h>
 #include <Transform.h>
 
-#define ENABLE_SKYBOX 0
-#define ENABLE_FULLSCREEN 1
+#define ENABLE_SKYBOX 1
+#define ENABLE_FULLSCREEN 0
 #define VSYNC 1
 
 GLFWwindow* window;
@@ -146,15 +146,16 @@ int main() {
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
+        auto cubemap = nightCubemap;
         for (unsigned int i = 0; i < 6; i++) {
             int W, H, C;
-            unsigned char *data = stbi_load(facesCubemap[i].c_str(), &W, &H, &C, 0);
+            unsigned char *data = stbi_load(cubemap[i].c_str(), &W, &H, &C, 0);
             if (data) {
                 stbi_set_flip_vertically_on_load(false);
                 glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,0, GL_RGB, W, H, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
                 stbi_image_free(data);
             } else {
-                std::cout << "Failed to load skybox texture: " << facesCubemap[i] << std::endl;
+                std::cout << "Failed to load skybox texture: " << cubemap[i] << std::endl;
                 stbi_image_free(data);
             }
         }
@@ -387,14 +388,18 @@ int main() {
             glUniform4f(glGetUniformLocation(stars_shader.programID, "cubeColor"), std::get<2>(s).x,
                         std::get<2>(s).y, std::get<2>(s).z, std::get<2>(s) .w);
         }
-        for (auto c : cubes) {
-            std::get<0>(c).render(cube_shader, camera);
-            std::get<1>(c) = glm::mat4(1.0f);
-            std::get<1>(c)  = glm::translate(std::get<1>(c), std::get<3>(c));
-            glUniformMatrix4fv(glGetUniformLocation(cube_shader.programID, "model"), 1, GL_FALSE,
-                               glm::value_ptr(std::get<1>(c)));
-            glUniform4f(glGetUniformLocation(cube_shader.programID, "cubeColor"), 255 * sin(lightPos.x),
-                        255 * sin(lightPos.y), 255 * sin(lightPos.z), std::get<2>(c) .w);
+        for (int x = 0; x <= 2 * numCubes; x++) {
+            for (int z = 0; z <= numCubes; z++) {
+                auto c = cubes[x * numCubes + z];
+                std::get<0>(c).render(cube_shader, camera);
+                std::get<1>(c) = glm::mat4(1.0f);
+                std::get<3>(c).y = x + z;
+                std::get<1>(c) = glm::translate(std::get<1>(c), std::get<3>(c));
+                glUniformMatrix4fv(glGetUniformLocation(cube_shader.programID, "model"), 1, GL_FALSE,
+                                   glm::value_ptr(std::get<1>(c)));
+                glUniform4f(glGetUniformLocation(cube_shader.programID, "cubeColor"), 255 * sin(lightPos.x),
+                            255 * sin(lightPos.y), 255 * sin(lightPos.z), std::get<2>(c).w);
+            }
         }
         glCheckError("Render");
 

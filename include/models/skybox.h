@@ -38,14 +38,25 @@ unsigned int skybox_indices[] =
 // TODO : Get some images from https://hdrihaven.com/ and try out what works the best for pogl scene
 // Used https://matheowis.github.io/HDRI-to-CubeMap/ to get images of 6 faces
 // px should be flipped vertically and sometimes horizontally as well
-std::string facesCubemap[6] =
+std::string dayCubemap[6] =
 {
-    "../resources/skybox/px.png",
-    "../resources/skybox/nx.png",
-    "../resources/skybox/py.png",
-    "../resources/skybox/ny.png",
-    "../resources/skybox/pz.png",
-    "../resources/skybox/nz.png",
+    "../resources/skybox/day/px.png",
+    "../resources/skybox/day/nx.png",
+    "../resources/skybox/day/py.png",
+    "../resources/skybox/day/ny.png",
+    "../resources/skybox/day/pz.png",
+    "../resources/skybox/day/nz.png",
 };
+
+std::string nightCubemap[6] =
+{
+    "../resources/skybox/night/px.png",
+    "../resources/skybox/night/nx.png",
+    "../resources/skybox/night/py.png",
+    "../resources/skybox/night/ny.png",
+    "../resources/skybox/night/pz.png",
+    "../resources/skybox/night/nz.png",
+};
+
 
 #endif //SHADEGL_SKYBOX_H
