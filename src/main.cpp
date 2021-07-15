@@ -162,32 +162,53 @@ int main() {
 
     // Handle CUBES STARS
     // Handle Light Source
-    Shader cube_shader("../shaders/cube_fragment.glsl", "../shaders/cube_vertex.glsl");
+    Shader stars_shader("../shaders/stars_fragment.glsl", "../shaders/stars_vertex.glsl");
     std::vector <Vertex> cube_verts(box_vertices, box_vertices + sizeof(box_vertices) / sizeof(Vertex));
     std::vector <GLuint> cube_inds(box_indices, box_indices + sizeof(box_indices) / sizeof(GLuint));
 
-    std::vector<std::tuple<Mesh, glm::mat4, glm::vec4, glm::vec3>> cube_models;
-    for (int x = -5; x < 5; x++) {
-        for (int y = -5; y < 5; y++) {
-            for (int z = -5; z < 5; z++) {
+    std::vector<std::tuple<Mesh, glm::mat4, glm::vec4, glm::vec3>> stars;
+    int numStars = 5;
+    float starsDistance = 100.f;
+    for (int x = -numStars; x < numStars; x++) {
+        for (int y = 0; y <  numStars; y++) {
+            for (int z = -numStars; z < numStars; z++) {
                 Mesh cube(cube_verts, cube_inds, floor_tex);
-                glm::vec4 cubeColor = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);
-                glm::vec3 cubePos = 10.f * glm::normalize(glm::vec3(x, y, z));
-                glm::mat4 cubeModel = glm::mat4(0.25f);
+                glm::vec4 cubeColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+                glm::vec3 cubePos = starsDistance * glm::normalize(glm::vec3(x, y, z));
+                glm::mat4 cubeModel = glm::mat4(0.35f);
                 cubeModel = glm::translate(cubeModel, cubePos);
-                cube_models.push_back(std::tuple<Mesh, glm::mat4, glm::vec4, glm::vec3>(cube, cubeModel, cubeColor, cubePos));
-                cube_shader.use();
-                glUniformMatrix4fv(glGetUniformLocation(cube_shader.programID, "model"), 1, GL_FALSE,
+                stars.push_back(std::tuple<Mesh, glm::mat4, glm::vec4, glm::vec3>(cube, cubeModel, cubeColor, cubePos));
+                stars_shader.use();
+                glUniformMatrix4fv(glGetUniformLocation(stars_shader.programID, "model"), 1, GL_FALSE,
                                    glm::value_ptr(cubeModel));
-                glUniform4f(glGetUniformLocation(cube_shader.programID, "cubeColor"), cubeColor.x, cubeColor.y,
-                            cubeColor.z,
-                            cubeColor.w);
-                glUniform4f(glGetUniformLocation(cube_shader.programID, "lightColor"), lightColor.x, lightColor.y,
-                            lightColor.z, lightColor.w);
             }
         }
     }
-
+    // Handle CUBES STARS
+    // Handle Light Source
+    Shader cube_shader("../shaders/cube_fragment.glsl", "../shaders/cube_vertex.glsl");
+    std::vector<std::tuple<Mesh, glm::mat4, glm::vec4, glm::vec3>> cubes;
+    int numCubes = 4;
+    float expand = 1.f;
+    float size = 10.f;
+    for (int x = -numCubes; x <= numCubes; x++) {
+        for (int z = -numCubes; z <= numCubes; z++) {
+            Mesh cube(cube_verts, cube_inds, floor_tex);
+            glm::vec4 cubeColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+            glm::vec3 cubePos = glm::vec3(expand * x, 0.5, expand * z);
+            glm::mat4 cubeModel = size * glm::mat4(1.f);
+            cubeModel = glm::translate(cubeModel, cubePos);
+            cubes.push_back(std::tuple<Mesh, glm::mat4, glm::vec4, glm::vec3>(cube, cubeModel, cubeColor, cubePos));
+            cube_shader.use();
+            glUniformMatrix4fv(glGetUniformLocation(cube_shader.programID, "model"), 1, GL_FALSE,
+                               glm::value_ptr(cubeModel));
+            glUniform4f(glGetUniformLocation(cube_shader.programID, "cubeColor"), cubeColor.x, cubeColor.y,
+                        cubeColor.z,
+                        cubeColor.w);
+            glUniform4f(glGetUniformLocation(cube_shader.programID, "lightColor"), lightColor.x, lightColor.y,
+                        lightColor.z, lightColor.w);
+        }
+    }
 
     // Camera Initialization
     Camera camera(window_width, window_height, glm::vec3(0.0f, 1.0f, 2.0f)); //, 0.075, 75.f);
@@ -356,10 +377,20 @@ int main() {
         glUniform3f(glGetUniformLocation(shader.programID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
         glUniform1i(glGetUniformLocation(shader.programID, "lmode"), lmode);
         // CUBES PARTY
-        for (auto c : cube_models) {
+        for (auto s : stars) {
+            std::get<0>(s).render(stars_shader, camera);
+            std::get<1>(s) = glm::mat4(1.0f);
+            std::get<3>(s).y += 0.25 * sin(ct);
+            std::get<1>(s)  = glm::translate(std::get<1>(s), std::get<3>(s));
+            glUniformMatrix4fv(glGetUniformLocation(stars_shader.programID, "model"), 1, GL_FALSE,
+                               glm::value_ptr(std::get<1>(s)));
+            glUniform4f(glGetUniformLocation(stars_shader.programID, "cubeColor"), std::get<2>(s).x,
+                        std::get<2>(s).y, std::get<2>(s).z, std::get<2>(s) .w);
+        }
+        for (auto c : cubes) {
             std::get<0>(c).render(cube_shader, camera);
             std::get<1>(c) = glm::mat4(1.0f);
-            std::get<1>(c)  = glm::translate(std::get<1>(c), std::get<3>(c) );
+            std::get<1>(c)  = glm::translate(std::get<1>(c), std::get<3>(c));
             glUniformMatrix4fv(glGetUniformLocation(cube_shader.programID, "model"), 1, GL_FALSE,
                                glm::value_ptr(std::get<1>(c)));
             glUniform4f(glGetUniformLocation(cube_shader.programID, "cubeColor"), 255 * sin(lightPos.x),
@@ -391,7 +422,6 @@ int main() {
             glBindVertexArray(0);
         }
         glCheckError("Skybox");
-
 
         glClearError();
         // Switch back to the normal depth function
@@ -425,6 +455,7 @@ int main() {
         skyboxshader.del();
     framebuffershader.del();
     cube_shader.del();
+    stars_shader.del();
     lightshader.del();
     glDeleteFramebuffers(1, &FBO);
     glDeleteFramebuffers(1, &FBO2);
@@ -488,6 +519,6 @@ void glClearError()
 void glCheckError(const char* s)
 {
     while (GLenum error = glGetError())
-        std::cout << "[OpenGL Error] (" << error << ")" << " at " << s << std::endl;
+        std::cout << "Opengl error : (" << error << ")" << " at " << s << std::endl;
     glClearError();
 }
