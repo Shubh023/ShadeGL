@@ -16,17 +16,19 @@ In order to replicated the results as seen in the video, the projet can be launc
 - `./ShadeGL`
 
 
-### KeyBinding to use different features
-- `W` or `UP` press W/Z or UP to move forward
-- `S` or `DOWN` press S or DOWN to move backwards
-- `Q` or `LEFT` press Q/A or LEFT to move left
-- `D` or `RIGHT` press D or RIGHT to move right
-- `SPACE` press SPACE to move upwards
-- `CTRL-RIGHT` press CTRL-RIGHT to move downwards
-- `left mouse click` press left mouse click on screen to change the orientation of the camera
-- press `1` to use Point LIGHT
-- press `2` to use Directional LIGHT
-- press `3` to use Spot LIGHT
-- press `4` to toggle effect 0
-- press `5` to toggle effect 1
-- press `6` to toggle effect 2
+### KeyBindings to use different features and get camera movements
+- `W|Z` or `UP` to move forward
+- `S` or `DOWN` to move backwards
+- `Q|A` or `LEFT` to move left
+- `D` or `RIGHT` to move right
+- `SPACE` to move upwards
+- `CTRL-RIGHT` move downwards
+- `left mouse click` press and hold left mouse click on screen and move mouse to change the orientation of the camera
+- `1` to use Point LIGHT
+- `2` to use Directional LIGHT
+- `3` to use Spot LIGHT
+- `4` to toggle effect 0
+- `5` to toggle effect 1
+- `6` to toggle effect 2
+- `l` to set light mode on, you won't be able to move the camera when light movement mode is on. (try pressing multiple times if one press is not working)
+- `r` while light mode is on, press `r` to reset light position (same as `l` try multiple time the light to go back to {0.f, 0.f, 0.f} once its pressed)
