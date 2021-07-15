@@ -39,10 +39,22 @@ glm::vec3 input() {
         light_sel = !light_sel;
     }
 
+    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+        gsel = 0;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+        gsel = 1;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+        gsel = 2;
+    }
+
     if (light_sel) {
 
-        if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-            gsel = !light_sel;
+        if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+            gpos = glm::vec3(0.0f, 0.75f, 0.0f);
         }
 
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
@@ -394,6 +406,7 @@ int main() {
         glUniformMatrix4fv(glGetUniformLocation(shader.programID, "model"), 1, GL_FALSE, glm::value_ptr(objectModel));
         glUniform4f(glGetUniformLocation(shader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
         glUniform3f(glGetUniformLocation(shader.programID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+        glUniform1i(glGetUniformLocation(shader.programID, "gsel"), gsel);
         light.Draw(lightshader, camera);
         glCheckError();
 
