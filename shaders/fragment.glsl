@@ -13,7 +13,7 @@ uniform sampler2D specular0;
 uniform vec4 lightColor;
 uniform vec3 lightPos;
 uniform vec3 camPos;
-uniform int gsel;
+uniform int lmode;
 
 vec4 pointLight()
 {
@@ -92,10 +92,10 @@ vec4 spotLight()
 
 void main()
 {
-	if (gsel == 0)
+	if (lmode == 0)
 		FragColor = pointLight();
-	if (gsel == 1)
+	if (lmode == 1)
 		FragColor = direcLight();
-	if (gsel == 2)
+	if (lmode == 2)
 		FragColor = spotLight();
 }

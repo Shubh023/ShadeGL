@@ -4,6 +4,7 @@
 #include <models/box.h>
 #include <models/rectangle.h>
 #include <models/skybox.h>
+#include <Transform.h>
 
 #define ENABLE_SKYBOX 0
 #define ENABLE_FULLSCREEN 0
@@ -109,7 +110,7 @@ int main() {
     glUniform4f(glGetUniformLocation(lightshader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 
     shader.use();
-    glUniform1i(glGetUniformLocation(shader.programID, "gsel"), 2);
+    glUniform1i(glGetUniformLocation(shader.programID, "lmode"), 2);
     glUniform4f(glGetUniformLocation(shader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
     glUniform3f(glGetUniformLocation(shader.programID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 
@@ -160,9 +161,20 @@ int main() {
     }
 
     // Handle CUBES
+    // Handle Light Source
+    Shader cube_shader("../shaders/cube_fragment.glsl", "../shaders/cube_vertex.glsl");
     std::vector <Vertex> cube_verts(box_vertices, box_vertices + sizeof(box_vertices) / sizeof(Vertex));
     std::vector <GLuint> cube_inds(box_indices, box_indices + sizeof(box_indices) / sizeof(GLuint));
     Mesh cube(cube_verts, cube_inds, floor_tex);
+    glm::vec4 cubeColor = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);
+    glm::vec3 cubePos = glm::vec3(0.f, 1.0f, 0.f);
+    glm::mat4 cubeModel = glm::mat4(1.0f);
+    cubeModel = glm::translate(cubeModel, cubePos);
+
+    cube_shader.use();
+    glUniformMatrix4fv(glGetUniformLocation(cube_shader.programID, "model"), 1, GL_FALSE, glm::value_ptr(cubeModel));
+    glUniform4f(glGetUniformLocation(cube_shader.programID, "cubeColor"), cubeColor.x, cubeColor.y, cubeColor.z, cubeColor.w);
+    glUniform4f(glGetUniformLocation(cube_shader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 
 
     // Camera Initialization
@@ -323,7 +335,6 @@ int main() {
         glClearError();
         floor.render(shader, camera);
         lightModel = glm::translate(lightModel, lightPos);
-
         glm::vec3 objectPos = -lightPos;
         glm::mat4 objectModel = glm::mat4(1.0f);
         objectModel = glm::translate(objectModel, objectPos);
@@ -331,8 +342,14 @@ int main() {
         glUniformMatrix4fv(glGetUniformLocation(shader.programID, "model"), 1, GL_FALSE, glm::value_ptr(objectModel));
         glUniform4f(glGetUniformLocation(shader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
         glUniform3f(glGetUniformLocation(shader.programID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
-        glUniform1i(glGetUniformLocation(shader.programID, "gsel"), lmode);
-        cube.render(lightshader, camera);
+        glUniform1i(glGetUniformLocation(shader.programID, "lmode"), lmode);
+        // CUBES PARTY
+        cube.render(cube_shader, camera);
+        cubePos.y = 2 * sin(ct);
+        cubeModel = glm::mat4(1.0f);
+        cubeModel = glm::translate(cubeModel, cubePos);
+        glUniformMatrix4fv(glGetUniformLocation(cube_shader.programID, "model"), 1, GL_FALSE, glm::value_ptr(cubeModel));
+        glUniform4f(glGetUniformLocation(cube_shader.programID, "cubeColor"), cubeColor.x, cubeColor.y, cubeColor.z, cubeColor.w);
         glCheckError("Render");
 
         // Handle Skybox
@@ -392,6 +409,7 @@ int main() {
     if (ENABLE_SKYBOX)
         skyboxshader.del();
     framebuffershader.del();
+    cube_shader.del();
     lightshader.del();
     glDeleteFramebuffers(1, &FBO);
     glDeleteFramebuffers(1, &FBO2);
