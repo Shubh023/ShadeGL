@@ -12,7 +12,6 @@ unsigned int Shader::compile(unsigned int type, const std::string& source) {
     glShaderSource(id, 1, &src, nullptr);
     glCompileShader(id);
 
-    // Error Handling on this Shader
     int result;
     glGetShaderiv(id, GL_COMPILE_STATUS, &result);
     if (result == GL_FALSE)

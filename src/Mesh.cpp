@@ -23,8 +23,7 @@ Mesh::Mesh(std::vector<Vertex> &_vertices, std::vector<GLuint> &_indices, std::v
     ebo.unbind();
 }
 
-void Mesh::render(Shader& shader, Camera& camera)
-{
+void Mesh::render(Shader& shader, Camera& camera) {
     shader.use();
     vao.bind();
 
@@ -36,21 +35,17 @@ void Mesh::render(Shader& shader, Camera& camera)
         std::string num;
         std::string type = textures[i].type;
         if (type == "diffuse")
-        {
             num = std::to_string(numDiffuse++);
-        }
         else if (type == "specular")
-        {
             num = std::to_string(numSpecular++);
-        }
         textures[i].assign_unit(shader, (type + num).c_str(), i);
         textures[i].bind();
     }
 
-    // Take care of the camera Matrix
+    // pass camera matrix to shader program
     glUniform3f(glGetUniformLocation(shader.programID, "camPos"), camera.P.x, camera.P.y, camera.P.z);
     camera.matrix(shader, "camMatrix");
 
-    // Draw the actual mesh
+    // draw the mesh's triangles
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 }

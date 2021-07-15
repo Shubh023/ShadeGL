@@ -22,25 +22,21 @@ Texture::Texture(const char* _path, const char* _tex_type, GLenum _tex_id, GLenu
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Texture::assign_unit(Shader& shader, const char* uniform, GLuint tex_id)
-{
+void Texture::assign_unit(Shader& shader, const char* uniform, GLuint tex_id) {
     GLuint texture_uniform = glGetUniformLocation(shader.programID, uniform);
     shader.use();
     glUniform1i(texture_uniform, tex_id);
 }
 
-void Texture::bind()
-{
+void Texture::bind() {
     glActiveTexture(GL_TEXTURE0 + tex_id);
     glBindTexture(GL_TEXTURE_2D, id);
 }
 
-void Texture::unbind()
-{
+void Texture::unbind() {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Texture::del()
-{
+void Texture::del() {
     glDeleteTextures(1, &id);
 }

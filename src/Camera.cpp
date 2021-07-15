@@ -18,8 +18,7 @@ Camera::Camera(int _width, int _height, glm::vec3 _P, float _speed, float _sensi
 }
 
 
-void Camera::update(float fov, float near, float far)
-{
+void Camera::update(float fov, float near, float far) {
     glm::mat4 view = glm::mat4(1.0f);
     glm::mat4 projection = glm::mat4(1.0f);
     view = glm::lookAt(P, P + O, U);
