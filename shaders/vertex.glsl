@@ -8,7 +8,6 @@ layout (location = 2) in vec3 aColor;
 
 layout (location = 3) in vec2 aTex;
 
-
 out vec3 current_position;
 
 out vec3 current_normal;
