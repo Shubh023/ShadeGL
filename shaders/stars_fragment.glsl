@@ -3,8 +3,8 @@
 out vec4 FragColor;
 
 uniform vec4 cubeColor;
-uniform vec4 lightColor;
 
+uniform vec4 lightColor;
 
 void main()
 {

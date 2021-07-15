@@ -14,7 +14,7 @@ out vec3 current_normal;
 
 out vec3 color;
 
-out vec2 texCoord;
+out vec2 texuv;
 
 uniform mat4 camMatrix;
 
@@ -26,7 +26,7 @@ void main()
 	current_normal = aNormal;
 
 	color = aColor;
-	texCoord = aTex;
+	texuv = aTex;
 
 	gl_Position = camMatrix * vec4(current_position, 1.0);
 }

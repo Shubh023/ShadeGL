@@ -123,20 +123,20 @@ int main() {
 
     // Handle Skybox
     Shader skyboxshader("../shaders/skybox_fragment.glsl", "../shaders/skybox_vertex.glsl");
-    unsigned int skyboxVAO, skyboxVBO, skyboxEBO;
-    // Creates the cubemap texture object
+    unsigned int skybox_vao, skybox_vbo, skybox_ebo;
+    // Create the cubemap texture object
     unsigned int cubemapTexture;
     if (ENABLE_SKYBOX) {
-        // Create VAO, VBO, and EBO for the skybox
+        // Create VAO, VBO, and EBO for the skybox just as we did in Mesh class
         skyboxshader.use();
         glUniform1i(glGetUniformLocation(skyboxshader.programID, "skybox"), 0);
-        glGenVertexArrays(1, &skyboxVAO);
-        glGenBuffers(1, &skyboxVBO);
-        glGenBuffers(1, &skyboxEBO);
-        glBindVertexArray(skyboxVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+        glGenVertexArrays(1, &skybox_vao);
+        glGenBuffers(1, &skybox_vbo);
+        glGenBuffers(1, &skybox_ebo);
+        glBindVertexArray(skybox_vao);
+        glBindBuffer(GL_ARRAY_BUFFER, skybox_vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(skybox_vertices), &skybox_vertices, GL_STATIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyboxEBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skybox_ebo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(skybox_indices), &skybox_indices, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
         glEnableVertexAttribArray(0);
@@ -144,11 +144,11 @@ int main() {
         glBindVertexArray(0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+        // Handle how the texture map should be placed/applied on the cube
         glGenTextures(1, &cubemapTexture);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -162,16 +162,13 @@ int main() {
             if (data) {
                 stbi_set_flip_vertically_on_load(false);
                 glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,0, GL_RGBA, W, H, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-                stbi_image_free(data);
-            } else {
+            } else
                 std::cout << "Failed to load skybox texture: " << cubemap[i] << std::endl;
-                stbi_image_free(data);
-            }
+            stbi_image_free(data);
         }
     }
 
     // Handle CUBES STARS
-    // Handle Light Source
     Shader stars_shader("../shaders/stars_fragment.glsl", "../shaders/stars_vertex.glsl");
     std::vector <Vertex> cube_verts(box_vertices, box_vertices + sizeof(box_vertices) / sizeof(Vertex));
     std::vector <GLuint> cube_inds(box_indices, box_indices + sizeof(box_indices) / sizeof(GLuint));
@@ -194,8 +191,7 @@ int main() {
             }
         }
     }
-    // Handle CUBES STARS
-    // Handle Light Source
+    // Handle CUBES
     Shader cube_shader("../shaders/cube_fragment.glsl", "../shaders/cube_vertex.glsl");
     std::vector<std::tuple<Mesh, glm::mat4, glm::vec4, glm::vec3>> cubes;
     int numCubes = 4;
@@ -450,7 +446,7 @@ int main() {
             projection = glm::perspective(glm::radians(45.0f), (float) window_width / window_height, 0.1f, 100.0f);
             glUniformMatrix4fv(glGetUniformLocation(skyboxshader.programID, "view"), 1, GL_FALSE, glm::value_ptr(view));
             glUniformMatrix4fv(glGetUniformLocation(skyboxshader.programID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-            glBindVertexArray(skyboxVAO);
+            glBindVertexArray(skybox_vao);
         }
         glActiveTexture(GL_TEXTURE0);
         if (ENABLE_SKYBOX) {

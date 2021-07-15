@@ -35,7 +35,7 @@ void Camera::movements(GLFWwindow *window) {
     // MOVE FORWARD
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
         P += speed * O ;
-    // MOVE BACWARDS
+    // MOVE BACKWARDS
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
         P += speed * -O ;
     // MOVE LEFT

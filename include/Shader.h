@@ -17,6 +17,7 @@ public:
     static unsigned int compile(unsigned int type, const std::string& source);
     void use() const { glUseProgram(programID); };
     void del() const { glDeleteProgram(programID); }
+
     unsigned int programID;
 };
 

@@ -17,8 +17,11 @@
 #include <iostream>
 #include <sstream>
 
+// Helpful functions for debug
 void glClearError();
 void glCheckError(const char* s);
+
+// Register inputs and update variables accordingly
 void input();
 
 #endif //SHADEGL_SHADEGL_H
