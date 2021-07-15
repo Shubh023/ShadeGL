@@ -17,7 +17,6 @@
 #include <iostream>
 #include <sstream>
 
-#define GRAVITY -50
 void glClearError();
 void glCheckError(const char* s);
 void input();
