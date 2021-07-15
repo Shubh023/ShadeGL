@@ -4,10 +4,9 @@
 #include <models/box.h>
 #include <models/rectangle.h>
 #include <models/skybox.h>
-#include <Transform.h>
 
 #define ENABLE_SKYBOX 1
-#define ENABLE_FULLSCREEN 0
+#define ENABLE_FULLSCREEN 1
 #define VSYNC 1
 
 GLFWwindow* window;
