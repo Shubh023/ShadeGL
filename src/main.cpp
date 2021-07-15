@@ -27,6 +27,7 @@ glm::vec3 lO = glm::vec3();
 glm::vec3 lU = glm::vec3();
 float ls = 0.1f;
 int lmode = 0;
+int toggle = 0;
 
 
 int main() {
@@ -171,7 +172,7 @@ int main() {
     int numStars = 5;
     float starsDistance = 100.f;
     for (int x = -numStars; x < numStars; x++) {
-        for (int y = 0; y <  numStars; y++) {
+        for (int y = int(numStars / 2) ; y <  numStars; y++) {
             for (int z = -numStars; z < numStars; z++) {
                 Mesh cube(cube_verts, cube_inds, floor_tex);
                 glm::vec4 cubeColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -384,7 +385,10 @@ int main() {
         for (auto s : stars) {
             std::get<0>(s).render(stars_shader, camera);
             std::get<1>(s) = glm::mat4(1.0f);
-            std::get<3>(s).y += 0.25 * sin(ct);
+            std::get<3>(s).x += 0.5 * sin(curr);
+            std::get<3>(s).z += sin(curr);
+            std::get<3>(s).y += 0.2 * sin(ct);
+
             std::get<1>(s)  = glm::translate(std::get<1>(s), std::get<3>(s));
             glUniformMatrix4fv(glGetUniformLocation(stars_shader.programID, "model"), 1, GL_FALSE,
                                glm::value_ptr(std::get<1>(s)));
@@ -394,11 +398,20 @@ int main() {
         for (auto c : cubes) {
             std::get<0>(c).render(cube_shader, camera);
             std::get<1>(c) = glm::mat4(1.0f);
-            std::get<3>(c).x += lightPos.x * 0.5;
-            std::get<3>(c).z += lightPos.z * 0.5;
-            std::get<3>(c).y += ((10 + std::get<3>(c).x + std::get<3>(c).z) * 0.5 + lightPos.x + lightPos.y) * sin(curr);
-            glm::vec3 new_pos = 10.0f * glm::normalize(std::get<3>(c));
-            std::get<1>(c) = glm::translate(std::get<1>(c), new_pos);
+            if (toggle == 0) {
+                std::get<3>(c).x += lightPos.x * 0.5;
+                std::get<3>(c).z += lightPos.z * 0.5;
+                std::get<3>(c).y += (std::get<3>(c).z + std::get<3>(c).x) * sin(curr);
+                std::get<1>(c) = glm::translate(std::get<1>(c), std::get<3>(c));
+            }
+            if (toggle == 1) {
+                std::get<3>(c).x += lightPos.x * 0.5;
+                std::get<3>(c).z += lightPos.z * 0.5 + 10;
+                std::get<3>(c).y +=
+                        ((10 + std::get<3>(c).x + std::get<3>(c).z) * 0.5 + lightPos.x + lightPos.y) * sin(curr);
+                glm::vec3 new_pos = 10.0f * glm::normalize(std::get<3>(c));
+                std::get<1>(c) = glm::translate(std::get<1>(c), new_pos);
+            }
             glUniformMatrix4fv(glGetUniformLocation(cube_shader.programID, "model"), 1, GL_FALSE,
                                glm::value_ptr(std::get<1>(c)));
             glUniform4f(glGetUniformLocation(cube_shader.programID, "cubeColor"), 255 * sin(lightPos.x),
@@ -493,6 +506,13 @@ void input() {
 
     if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
         lmode = 2;
+    }
+    if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
+        toggle = 0;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) {
+        toggle = 1;
     }
 
     if (light_sel) {
