@@ -6,8 +6,9 @@
 #include <models/skybox.h>
 
 #define ENABLE_SKYBOX 1
-#define ENABLE_FULLSCREEN 1
+#define ENABLE_FULLSCREEN 0
 #define VSYNC 1
+#define DAY 0
 
 GLFWwindow* window;
 GLFWmonitor* monitor;
@@ -30,8 +31,11 @@ int toggle = 0;
 
 
 int main() {
+    // Initializing light Orientation
     lO = glm::vec3(0.0f, 0.0f, -1.0f);
+    // Initializing light Up
     lU = glm::vec3(0.0f, 1.0f, 0.0f);
+
     // Greet on the terminal
     std::cout << "Hello, Welcome to ShadeGL !" << std::endl;
 
@@ -47,7 +51,9 @@ int main() {
 
     // Setup Monitor to Primary
     monitor = glfwGetPrimaryMonitor();
-    running = true; // States if program is running or not
+
+    // States if program is running or not
+    running = true;
 
     // Handle case where we want to render at the maximum monitor resolution aka Fullscreen :-)
     if (ENABLE_FULLSCREEN) {
@@ -83,6 +89,7 @@ int main() {
     /**
      * Handle Textures
      */
+    // If image is JPG -> GL_RGBA & if PNG -> GL_RGB
     Texture floor_textures[] {
         Texture("../resources/concrete.jpg", "diffuse", 0, GL_RGB, GL_UNSIGNED_BYTE),
         Texture("../resources/concrete_spec.jpg", "specular", 1, GL_RED, GL_UNSIGNED_BYTE)
@@ -147,6 +154,8 @@ int main() {
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
         auto cubemap = nightCubemap;
+        if (DAY)
+            cubemap = dayCubemap;
         for (unsigned int i = 0; i < 6; i++) {
             int W, H, C;
             unsigned char *data = stbi_load(cubemap[i].c_str(), &W, &H, &C, 0);
@@ -214,7 +223,7 @@ int main() {
     }
 
     // Camera Initialization
-    Camera camera(window_width, window_height, glm::vec3(0.0f, 1.0f, 2.0f)); //, 0.075, 75.f);
+    Camera camera(window_width, window_height, glm::vec3(0.0f, 1.0f, 2.0f), 0.15, 75.f);
 
     /**
      * Toogle GL Features

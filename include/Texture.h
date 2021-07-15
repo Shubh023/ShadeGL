@@ -11,7 +11,6 @@
 
 class Texture {
 public:
-
     Texture(const char* _path, const char* _tex_type, GLenum _tex_id, GLenum _format, GLenum _data_type);
 
     GLuint id;
