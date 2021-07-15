@@ -32,3 +32,9 @@ In order to replicated the results as seen in the video, the projet can be launc
 - `6` to toggle effect 2
 - `l` to set light mode on, you won't be able to move the camera when light movement mode is on. (try pressing multiple times if one press is not working)
 - `r` while light mode is on, press `r` to reset light position (same as `l` try multiple time the light to go back to {0.f, 0.f, 0.f} once its pressed)
+
+
+## Requirements:
+- GLFW libglfw3-dev libglfw3
+- GLEW libglew-dev
+- OPENGL provided with display driver or mesa may be required
