@@ -1,5 +1,6 @@
 #include <glm/glm.hpp>
 #include <Mesh.h>
+#include <Transform.h>
 #include <models/floor.h>
 #include <models/box.h>
 #include <models/rectangle.h>
@@ -11,7 +12,7 @@
 
 GLFWwindow* window;
 GLFWmonitor* monitor;
-bool running;
+bool running, light_sel = false;
 unsigned int window_width = 1980;
 unsigned int window_height = 1080;
 
@@ -21,11 +22,52 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-void input() {
+glm::vec3 gpos = glm::vec3();
+glm::vec3 gorientation = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 gup = glm::vec3(0.0f, 1.0f, 0.0f);
+float gspeed = 0.1f;
+int gsel = 0;
+
+glm::vec3 input() {
     glfwPollEvents();
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         running = false;
         glfwSetWindowShouldClose(window, 1);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+        light_sel = !light_sel;
+    }
+
+    if (light_sel) {
+
+        if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+            gsel = !light_sel;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+            gpos += gspeed * gorientation;
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+            gpos += gspeed * -glm::normalize(glm::cross(gorientation, gup));
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+            gpos += gspeed * -gorientation;
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            gpos += gspeed * glm::normalize(glm::cross(gorientation, gup));
+        }
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            gpos += gspeed * gup;
+        }
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+            gpos += gspeed * -gup;
+        }
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+            gspeed = 0.4f;
+        } else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) {
+            gspeed = 0.1f;
+        }
     }
 }
 
@@ -121,12 +163,18 @@ int main() {
 
     glm::vec3 objectPos = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::mat4 objectModel = glm::mat4(1.0f);
+    Transform transform;
+
+    glm::mat4 objectTransform = transform.model();
     objectModel = glm::translate(objectModel, objectPos);
 
     lightshader.use();
     glUniformMatrix4fv(glGetUniformLocation(lightshader.programID, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
     glUniform4f(glGetUniformLocation(lightshader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
+    glUniformMatrix4fv(glGetUniformLocation(lightshader.programID, "transform"), 1, GL_FALSE, glm::value_ptr(objectTransform));
+
     shader.use();
+    glUniform1i(glGetUniformLocation(shader.programID, "gsel"), 2);
     glUniformMatrix4fv(glGetUniformLocation(shader.programID, "model"), 1, GL_FALSE, glm::value_ptr(objectModel));
     glUniform4f(glGetUniformLocation(shader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
     glUniform3f(glGetUniformLocation(shader.programID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
@@ -283,7 +331,7 @@ int main() {
         ct++;
 
         // Wait until a few milliseconds to get some frames done in order to estimate the FPS metrics
-        if (diff >= 1.0 / 60.0)
+        if (diff >= 1.0 / 30.0)
         {
             std::string fps = std::to_string((1.0 / diff) * ct);
             std::string ms = std::to_string((diff / ct) * 1000);
@@ -298,7 +346,13 @@ int main() {
             if (!VSYNC) {
                 // Check for user inputs
                 input();
-                camera.inputs(window);
+                if (!light_sel)
+                    camera.inputs(window);
+                else {
+                    lightPos.x = gpos.x;
+                    lightPos.y = gpos.y;
+                    lightPos.z = gpos.z;
+                }
             }
         }
 
@@ -316,7 +370,13 @@ int main() {
         if (VSYNC) {
             // Check for user inputs for the window as well as the camera
             input();
-            camera.inputs(window);
+            if (!light_sel)
+                camera.inputs(window);
+            else {
+                lightPos.x = gpos.x;
+                lightPos.y = gpos.y;
+                lightPos.z = gpos.z;
+            }
         }
 
         // Scale Factor
@@ -325,9 +385,15 @@ int main() {
         // Update Camera Matrix
         camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
-        // DRAW | Render SOMETHING
+        // Draw | Update | Render
         glClearError();
         floor.Draw(shader, camera);
+        lightModel = transform.model() * lightModel;
+        glUniformMatrix4fv(glGetUniformLocation(lightshader.programID, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
+        glUniform4f(glGetUniformLocation(lightshader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
+        glUniformMatrix4fv(glGetUniformLocation(shader.programID, "model"), 1, GL_FALSE, glm::value_ptr(objectModel));
+        glUniform4f(glGetUniformLocation(shader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
+        glUniform3f(glGetUniformLocation(shader.programID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
         light.Draw(lightshader, camera);
         glCheckError();
 
@@ -393,5 +459,4 @@ int main() {
     glfwTerminate();
     return 0;
 }
-
 

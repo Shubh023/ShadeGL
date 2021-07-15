@@ -23,7 +23,8 @@ uniform vec4 lightColor;
 uniform vec3 lightPos;
 // Gets the position of the camera from the main function
 uniform vec3 camPos;
-
+// Select light mode
+uniform int gsel;
 
 vec4 pointLight()
 {
@@ -106,5 +107,10 @@ vec4 spotLight()
 void main()
 {
 	// outputs final color
-	FragColor = pointLight();
+	if (gsel == 0)
+		FragColor = pointLight();
+	if (gsel == 1)
+		FragColor = direcLight();
+	if (gsel == 2)
+		FragColor = spotLight();
 }
