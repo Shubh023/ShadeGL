@@ -191,23 +191,25 @@ int main() {
     std::vector<std::tuple<Mesh, glm::mat4, glm::vec4, glm::vec3>> cubes;
     int numCubes = 4;
     float expand = 1.f;
-    float size = 10.f;
+    float size = 5.f;
     for (int x = -numCubes; x <= numCubes; x++) {
-        for (int z = -numCubes; z <= numCubes; z++) {
-            Mesh cube(cube_verts, cube_inds, floor_tex);
-            glm::vec4 cubeColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-            glm::vec3 cubePos = glm::vec3(expand * x, 0.5, expand * z);
-            glm::mat4 cubeModel = size * glm::mat4(1.f);
-            cubeModel = glm::translate(cubeModel, cubePos);
-            cubes.push_back(std::tuple<Mesh, glm::mat4, glm::vec4, glm::vec3>(cube, cubeModel, cubeColor, cubePos));
-            cube_shader.use();
-            glUniformMatrix4fv(glGetUniformLocation(cube_shader.programID, "model"), 1, GL_FALSE,
-                               glm::value_ptr(cubeModel));
-            glUniform4f(glGetUniformLocation(cube_shader.programID, "cubeColor"), cubeColor.x, cubeColor.y,
-                        cubeColor.z,
-                        cubeColor.w);
-            glUniform4f(glGetUniformLocation(cube_shader.programID, "lightColor"), lightColor.x, lightColor.y,
-                        lightColor.z, lightColor.w);
+        for (int y = -numCubes; y <= numCubes; y++) {
+            for (int z = -numCubes; z <= numCubes; z++) {
+                Mesh cube(cube_verts, cube_inds, floor_tex);
+                glm::vec4 cubeColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+                glm::vec3 cubePos = glm::vec3(expand * x, expand * y,  expand * z - 10);
+                glm::mat4 cubeModel = size * glm::mat4(1.f);
+                cubeModel = glm::translate(cubeModel, cubePos);
+                cubes.push_back(std::tuple<Mesh, glm::mat4, glm::vec4, glm::vec3>(cube, cubeModel, cubeColor, cubePos));
+                cube_shader.use();
+                glUniformMatrix4fv(glGetUniformLocation(cube_shader.programID, "model"), 1, GL_FALSE,
+                                   glm::value_ptr(cubeModel));
+                glUniform4f(glGetUniformLocation(cube_shader.programID, "cubeColor"), cubeColor.x, cubeColor.y,
+                            cubeColor.z,
+                            cubeColor.w);
+                glUniform4f(glGetUniformLocation(cube_shader.programID, "lightColor"), lightColor.x, lightColor.y,
+                            lightColor.z, lightColor.w);
+            }
         }
     }
 
@@ -377,6 +379,7 @@ int main() {
         glUniform4f(glGetUniformLocation(shader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
         glUniform3f(glGetUniformLocation(shader.programID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
         glUniform1i(glGetUniformLocation(shader.programID, "lmode"), lmode);
+
         // CUBES PARTY
         for (auto s : stars) {
             std::get<0>(s).render(stars_shader, camera);
@@ -388,18 +391,18 @@ int main() {
             glUniform4f(glGetUniformLocation(stars_shader.programID, "cubeColor"), std::get<2>(s).x,
                         std::get<2>(s).y, std::get<2>(s).z, std::get<2>(s) .w);
         }
-        for (int x = 0; x <= 2 * numCubes; x++) {
-            for (int z = 0; z <= numCubes; z++) {
-                auto c = cubes[x * numCubes + z];
-                std::get<0>(c).render(cube_shader, camera);
-                std::get<1>(c) = glm::mat4(1.0f);
-                std::get<3>(c).y = x + z;
-                std::get<1>(c) = glm::translate(std::get<1>(c), std::get<3>(c));
-                glUniformMatrix4fv(glGetUniformLocation(cube_shader.programID, "model"), 1, GL_FALSE,
-                                   glm::value_ptr(std::get<1>(c)));
-                glUniform4f(glGetUniformLocation(cube_shader.programID, "cubeColor"), 255 * sin(lightPos.x),
-                            255 * sin(lightPos.y), 255 * sin(lightPos.z), std::get<2>(c).w);
-            }
+        for (auto c : cubes) {
+            std::get<0>(c).render(cube_shader, camera);
+            std::get<1>(c) = glm::mat4(1.0f);
+            std::get<3>(c).x += lightPos.x * 0.5;
+            std::get<3>(c).z += lightPos.z * 0.5;
+            std::get<3>(c).y += ((10 + std::get<3>(c).x + std::get<3>(c).z) * 0.5 + lightPos.x + lightPos.y) * sin(curr);
+            glm::vec3 new_pos = 10.0f * glm::normalize(std::get<3>(c));
+            std::get<1>(c) = glm::translate(std::get<1>(c), new_pos);
+            glUniformMatrix4fv(glGetUniformLocation(cube_shader.programID, "model"), 1, GL_FALSE,
+                               glm::value_ptr(std::get<1>(c)));
+            glUniform4f(glGetUniformLocation(cube_shader.programID, "cubeColor"), 255 * sin(lightPos.x),
+                        255 * sin(lightPos.y), 255 * sin(lightPos.z), std::get<2>(c).w);
         }
         glCheckError("Render");
 
