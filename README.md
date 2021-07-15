@@ -24,9 +24,9 @@ In order to replicated the results as seen in the video, the projet can be launc
 - `SPACE` press SPACE to move upwards
 - `CTRL-RIGHT` press CTRL-RIGHT to move downwards
 - `left mouse click` press left mouse click on screen to change the orientation of the camera
-- press `1` to use POINT LIGHT
-- press `2` to use POINT LIGHT
-- press `3` to use POINT LIGHT
-- press `4` to use POINT LIGHT
-- press `5` to use POINT LIGHT
-- press `6` to use POINT LIGHT
+- press `1` to use Point LIGHT
+- press `2` to use Directional LIGHT
+- press `3` to use Spot LIGHT
+- press `4` to toggle effect 0
+- press `5` to toggle effect 1
+- press `6` to toggle effect 2
