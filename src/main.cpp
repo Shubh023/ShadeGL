@@ -161,7 +161,7 @@ int main() {
             unsigned char *data = stbi_load(cubemap[i].c_str(), &W, &H, &C, 0);
             if (data) {
                 stbi_set_flip_vertically_on_load(false);
-                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,0, GL_RGB, W, H, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,0, GL_RGBA, W, H, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
                 stbi_image_free(data);
             } else {
                 std::cout << "Failed to load skybox texture: " << cubemap[i] << std::endl;
@@ -394,15 +394,15 @@ int main() {
             std::get<0>(s).render(stars_shader, camera);
             std::get<1>(s) = glm::mat4(1.0f);
             std::get<3>(s).x += 0.5 * sin(curr);
-            std::get<3>(s).z += sin(curr);
-            std::get<3>(s).y += 0.2 * sin(ct);
-
+            std::get<3>(s).z += 0.5 * sin(curr);
+            std::get<3>(s).y += 0.05 * sin(ct);
             std::get<1>(s)  = glm::translate(std::get<1>(s), std::get<3>(s));
             glUniformMatrix4fv(glGetUniformLocation(stars_shader.programID, "model"), 1, GL_FALSE,
                                glm::value_ptr(std::get<1>(s)));
             glUniform4f(glGetUniformLocation(stars_shader.programID, "cubeColor"), std::get<2>(s).x,
                         std::get<2>(s).y, std::get<2>(s).z, std::get<2>(s) .w);
         }
+        glClearError();
         for (auto c : cubes) {
             std::get<0>(c).render(cube_shader, camera);
             std::get<1>(c) = glm::mat4(1.0f);
@@ -411,6 +411,7 @@ int main() {
                 std::get<3>(c).z += lightPos.z * 0.5;
                 std::get<3>(c).y += (std::get<3>(c).z + std::get<3>(c).x) * sin(curr);
                 std::get<1>(c) = glm::translate(std::get<1>(c), std::get<3>(c));
+                glCheckError("toggle0");
             }
             if (toggle == 1) {
                 std::get<3>(c).x += lightPos.x * 0.5;
@@ -419,6 +420,14 @@ int main() {
                         ((10 + std::get<3>(c).x + std::get<3>(c).z) * 0.5 + lightPos.x + lightPos.y) * sin(curr);
                 glm::vec3 new_pos = 10.0f * glm::normalize(std::get<3>(c));
                 std::get<1>(c) = glm::translate(std::get<1>(c), new_pos);
+                glCheckError("toggle1");
+            }
+            if (toggle == 2) {
+                std::get<3>(c).x += lightPos.x * 0.5;
+                std::get<3>(c).z += lightPos.z * 0.5;
+                std::get<3>(c).y += 10;
+                std::get<1>(c) = glm::translate(std::get<1>(c), std::get<3>(c));
+                glCheckError("toggle2");
             }
             glUniformMatrix4fv(glGetUniformLocation(cube_shader.programID, "model"), 1, GL_FALSE,
                                glm::value_ptr(std::get<1>(c)));
@@ -521,6 +530,10 @@ void input() {
 
     if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) {
         toggle = 1;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) {
+        toggle = 2;
     }
 
     if (light_sel) {
