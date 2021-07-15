@@ -17,19 +17,9 @@
 #include <iostream>
 #include <sstream>
 
-static void glClearError()
-{
-    while (glGetError() != GL_NO_ERROR);
-}
-
-static void glCheckError()
-{
-    while (GLenum error = glGetError())
-    {
-        std::cout << "[OpenGL Error] (" << error << ")" << std::endl;
-    }
-}
-
-
+#define GRAVITY -50
+void glClearError();
+void glCheckError(const char* s);
+void input();
 
 #endif //SHADEGL_SHADEGL_H

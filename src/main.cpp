@@ -1,13 +1,12 @@
 #include <glm/glm.hpp>
 #include <Mesh.h>
-#include <Transform.h>
 #include <models/floor.h>
 #include <models/box.h>
 #include <models/rectangle.h>
 #include <models/skybox.h>
 
 #define ENABLE_SKYBOX 0
-#define ENABLE_FULLSCREEN 1
+#define ENABLE_FULLSCREEN 0
 #define VSYNC 1
 
 GLFWwindow* window;
@@ -16,75 +15,22 @@ bool running, light_sel = false;
 unsigned int window_width = 1980;
 unsigned int window_height = 1080;
 
-unsigned int samples = 8;
+unsigned int samples = 16;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-glm::vec3 gpos = glm::vec3();
-glm::vec3 gorientation = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 gup = glm::vec3(0.0f, 1.0f, 0.0f);
-float gspeed = 0.1f;
-int gsel = 0;
-
-glm::vec3 input() {
-    glfwPollEvents();
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        running = false;
-        glfwSetWindowShouldClose(window, 1);
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-        light_sel = !light_sel;
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
-        gsel = 0;
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-        gsel = 1;
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
-        gsel = 2;
-    }
-
-    if (light_sel) {
-
-        if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
-            gpos = glm::vec3(0.0f, 0.75f, 0.0f);
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-            gpos += gspeed * gorientation;
-        }
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-            gpos += gspeed * -glm::normalize(glm::cross(gorientation, gup));
-        }
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-            gpos += gspeed * -gorientation;
-        }
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-            gpos += gspeed * glm::normalize(glm::cross(gorientation, gup));
-        }
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            gpos += gspeed * gup;
-        }
-        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-            gpos += gspeed * -gup;
-        }
-        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-            gspeed = 0.4f;
-        } else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) {
-            gspeed = 0.1f;
-        }
-    }
-}
+glm::vec3 lP = glm::vec3();
+glm::vec3 lO = glm::vec3();
+glm::vec3 lU = glm::vec3();
+float ls = 0.1f;
+int lmode = 0;
 
 
 int main() {
+    lO = glm::vec3(0.0f, 0.0f, -1.0f);
+    lU = glm::vec3(0.0f, 1.0f, 0.0f);
     // Greet on the terminal
     std::cout << "Hello, Welcome to ShadeGL !" << std::endl;
 
@@ -137,8 +83,8 @@ int main() {
      * Handle Textures
      */
     Texture floor_textures[] {
-        Texture("../resources/planks.png", "diffuse", 0, GL_RGBA, GL_UNSIGNED_BYTE),
-        Texture("../resources/planks_spec.png", "specular", 1, GL_RED, GL_UNSIGNED_BYTE)
+        Texture("../resources/concrete.jpg", "diffuse", 0, GL_RGB, GL_UNSIGNED_BYTE),
+        Texture("../resources/concrete_spec.jpg", "specular", 1, GL_RED, GL_UNSIGNED_BYTE)
     };
 
     /**
@@ -151,43 +97,19 @@ int main() {
     std::vector <Texture> floor_tex(floor_textures, floor_textures + sizeof(floor_textures) / sizeof(Texture));
     Mesh floor(floor_verts, floor_ind, floor_tex);
 
-    /*
-    // Handle cube mesh
-    Shader cube_shader("../shaders/box_fragment.glsl", "../shaders/box_vertex.glsl");
-    std::vector <Vertex> boxVerts(box_vertices, box_vertices + sizeof(box_vertices) / sizeof(Vertex));
-    std::vector <GLuint> boxInd(box_indices, box_indices + sizeof(box_indices) / sizeof(GLuint));
-    std::vector <Texture> box_tex(box_textures, box_textures + sizeof(box_textures) / sizeof(Texture));
-    Mesh cube(boxVerts, boxInd, box_tex);
-    */
-
     // Handle Light Source
     Shader lightshader("../shaders/light_fragment.glsl", "../shaders/light_vertex.glsl");
-    std::vector <Vertex> lightVerts(box_vertices, box_vertices + sizeof(box_vertices) / sizeof(Vertex));
-    std::vector <GLuint> lightInd(box_indices, box_indices + sizeof(box_indices) / sizeof(GLuint));
-    Mesh light(lightVerts, lightInd, floor_tex);
-
-
-    // Handle Lighting
     glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     glm::vec3 lightPos = glm::vec3(0.f, 0.75f, 0.f);
     glm::mat4 lightModel = glm::mat4(1.0f);
     lightModel = glm::translate(lightModel, lightPos);
 
-    glm::vec3 objectPos = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::mat4 objectModel = glm::mat4(1.0f);
-    Transform transform;
-
-    glm::mat4 objectTransform = transform.model();
-    objectModel = glm::translate(objectModel, objectPos);
-
     lightshader.use();
     glUniformMatrix4fv(glGetUniformLocation(lightshader.programID, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
     glUniform4f(glGetUniformLocation(lightshader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
-    glUniformMatrix4fv(glGetUniformLocation(lightshader.programID, "transform"), 1, GL_FALSE, glm::value_ptr(objectTransform));
 
     shader.use();
     glUniform1i(glGetUniformLocation(shader.programID, "gsel"), 2);
-    glUniformMatrix4fv(glGetUniformLocation(shader.programID, "model"), 1, GL_FALSE, glm::value_ptr(objectModel));
     glUniform4f(glGetUniformLocation(shader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
     glUniform3f(glGetUniformLocation(shader.programID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 
@@ -224,11 +146,11 @@ int main() {
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
         for (unsigned int i = 0; i < 6; i++) {
-            int width, height, nrChannels;
-            unsigned char *data = stbi_load(facesCubemap[i].c_str(), &width, &height, &nrChannels, 0);
+            int W, H, C;
+            unsigned char *data = stbi_load(facesCubemap[i].c_str(), &W, &H, &C, 0);
             if (data) {
                 stbi_set_flip_vertically_on_load(false);
-                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,0, GL_RGB, W, H, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
                 stbi_image_free(data);
             } else {
                 std::cout << "Failed to load skybox texture: " << facesCubemap[i] << std::endl;
@@ -237,8 +159,11 @@ int main() {
         }
     }
 
-    // Uniforms
-    GLuint uniID = glGetUniformLocation(shader.programID, "scale");
+    // Handle CUBES
+    std::vector <Vertex> cube_verts(box_vertices, box_vertices + sizeof(box_vertices) / sizeof(Vertex));
+    std::vector <GLuint> cube_inds(box_indices, box_indices + sizeof(box_indices) / sizeof(GLuint));
+    Mesh cube(cube_verts, cube_inds, floor_tex);
+
 
     // Camera Initialization
     Camera camera(window_width, window_height, glm::vec3(0.0f, 1.0f, 2.0f)); //, 0.075, 75.f);
@@ -359,11 +284,11 @@ int main() {
                 // Check for user inputs
                 input();
                 if (!light_sel)
-                    camera.inputs(window);
+                    camera.movements(window);
                 else {
-                    lightPos.x = gpos.x;
-                    lightPos.y = gpos.y;
-                    lightPos.z = gpos.z;
+                    lightPos.x = lP.x;
+                    lightPos.y = lP.y;
+                    lightPos.z = lP.z;
                 }
             }
         }
@@ -383,34 +308,35 @@ int main() {
             // Check for user inputs for the window as well as the camera
             input();
             if (!light_sel)
-                camera.inputs(window);
+                camera.movements(window);
             else {
-                lightPos.x = gpos.x;
-                lightPos.y = gpos.y;
-                lightPos.z = gpos.z;
+                lightPos.x = lP.x;
+                lightPos.y = lP.y;
+                lightPos.z = lP.z;
             }
         }
 
-        // Scale Factor
-        glUniform1f(uniID, 5.f);
-
         // Update Camera Matrix
-        camera.updateMatrix(45.0f, 0.1f, 100.0f);
+        camera.update(45.0f, 0.1f, 100.0f);
 
         // Draw | Update | Render
         glClearError();
-        floor.Draw(shader, camera);
-        lightModel = transform.model() * lightModel;
+        floor.render(shader, camera);
+        lightModel = glm::translate(lightModel, lightPos);
+
+        glm::vec3 objectPos = -lightPos;
+        glm::mat4 objectModel = glm::mat4(1.0f);
+        objectModel = glm::translate(objectModel, objectPos);
         glUniformMatrix4fv(glGetUniformLocation(lightshader.programID, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
-        glUniform4f(glGetUniformLocation(lightshader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
         glUniformMatrix4fv(glGetUniformLocation(shader.programID, "model"), 1, GL_FALSE, glm::value_ptr(objectModel));
         glUniform4f(glGetUniformLocation(shader.programID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
         glUniform3f(glGetUniformLocation(shader.programID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
-        glUniform1i(glGetUniformLocation(shader.programID, "gsel"), gsel);
-        light.Draw(lightshader, camera);
-        glCheckError();
+        glUniform1i(glGetUniformLocation(shader.programID, "gsel"), lmode);
+        cube.render(lightshader, camera);
+        glCheckError("Render");
 
-
+        // Handle Skybox
+        glClearError();
         if (ENABLE_SKYBOX) {
             // For this skybox we want to use GL_LEQUAL for the depth function
             glDepthFunc(GL_LEQUAL);
@@ -419,13 +345,12 @@ int main() {
             // Handle Skybox projection on cubemap
             glm::mat4 view = glm::mat4(1.0f);
             glm::mat4 projection = glm::mat4(1.0f);
-            view = glm::mat4(glm::mat3(glm::lookAt(camera.position, camera.position + camera.orientation, camera.up)));
+            view = glm::mat4(glm::mat3(glm::lookAt(camera.P, camera.P + camera.O, camera.U)));
             projection = glm::perspective(glm::radians(45.0f), (float) window_width / window_height, 0.1f, 100.0f);
             glUniformMatrix4fv(glGetUniformLocation(skyboxshader.programID, "view"), 1, GL_FALSE, glm::value_ptr(view));
             glUniformMatrix4fv(glGetUniformLocation(skyboxshader.programID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
             glBindVertexArray(skyboxVAO);
         }
-
         glActiveTexture(GL_TEXTURE0);
         if (ENABLE_SKYBOX) {
             glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
@@ -433,7 +358,10 @@ int main() {
             glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
             glBindVertexArray(0);
         }
+        glCheckError("Skybox");
 
+
+        glClearError();
         // Switch back to the normal depth function
         glDepthFunc(GL_LESS);
         glDepthMask(GL_TRUE);
@@ -455,21 +383,78 @@ int main() {
         glDisable(GL_DEPTH_TEST);
         glBindTexture(GL_TEXTURE_2D, rect_texture);
         glDrawArrays(GL_TRIANGLES, 0, 6); // 6 vertices shared between 2 triangles
-
+        glCheckError("FrameBuffer | Rectangle Texture ...");
         // Swap buffers
         glfwSwapBuffers(window);
     }
     // Call Delete()
-    shader.Delete();
+    shader.del();
     if (ENABLE_SKYBOX)
-        skyboxshader.Delete();
-    framebuffershader.Delete();
-    lightshader.Delete();
+        skyboxshader.del();
+    framebuffershader.del();
+    lightshader.del();
     glDeleteFramebuffers(1, &FBO);
     glDeleteFramebuffers(1, &FBO2);
-
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
 }
 
+void input() {
+    glfwPollEvents();
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        running = false;
+        glfwSetWindowShouldClose(window, 1);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+        light_sel = !light_sel;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+        lmode = 0;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+        lmode = 1;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+        lmode = 2;
+    }
+
+    if (light_sel) {
+
+        if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+            lP = glm::vec3(0.0f, 0.75f, 0.0f);
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+            lP += ls * lO;
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+            lP += ls * -lO;
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+            lP += ls * -glm::normalize(glm::cross(lO, lU));
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS or glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+            lP += ls * glm::normalize(glm::cross(lO, lU));
+
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            lP += ls * lU;
+        }
+        if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+            lP += ls * -lU;
+        }
+    }
+}
+
+void glClearError()
+{
+    while (glGetError() != GL_NO_ERROR);
+}
+
+void glCheckError(const char* s)
+{
+    while (GLenum error = glGetError())
+        std::cout << "[OpenGL Error] (" << error << ")" << " at " << s << std::endl;
+    glClearError();
+}

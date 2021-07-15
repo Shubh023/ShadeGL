@@ -9,27 +9,25 @@ Mesh::Mesh(std::vector<Vertex> &_vertices, std::vector<GLuint> &_indices, std::v
     indices = _indices;
     textures = _textures;
 
-    vao.Bind();
+    vao.bind();
     VBO vbo(vertices);
     EBO ebo(indices);
 
-    vao.LinkAttrib(vbo, 0, 3, GL_FLOAT, sizeof(Vertex), (void*)0);
-    vao.LinkAttrib(vbo, 1, 3, GL_FLOAT, sizeof(Vertex), (void*)(3 * sizeof(float)));
-    vao.LinkAttrib(vbo, 2, 3, GL_FLOAT, sizeof(Vertex), (void*)(6 * sizeof(float)));
-    vao.LinkAttrib(vbo, 3, 2, GL_FLOAT, sizeof(Vertex), (void*)(9 * sizeof(float)));
+    vao.link(vbo, 0, 3, GL_FLOAT, sizeof(Vertex), (void*)0);
+    vao.link(vbo, 1, 3, GL_FLOAT, sizeof(Vertex), (void*)(3 * sizeof(float)));
+    vao.link(vbo, 2, 3, GL_FLOAT, sizeof(Vertex), (void*)(6 * sizeof(float)));
+    vao.link(vbo, 3, 2, GL_FLOAT, sizeof(Vertex), (void*)(9 * sizeof(float)));
 
-    vao.Unbind();
-    vbo.Unbind();
-    ebo.Unbind();
+    vao.unbind();
+    vbo.unbind();
+    ebo.unbind();
 }
 
-void Mesh::Draw(Shader& shader, Camera& camera)
+void Mesh::render(Shader& shader, Camera& camera)
 {
-    // Bind shader to be able to access uniforms
     shader.use();
-    vao.Bind();
+    vao.bind();
 
-    // Keep track of how many of each type of textures we have
     unsigned int numDiffuse = 0;
     unsigned int numSpecular = 0;
 
@@ -45,11 +43,12 @@ void Mesh::Draw(Shader& shader, Camera& camera)
         {
             num = std::to_string(numSpecular++);
         }
-        textures[i].texUnit(shader, (type + num).c_str(), i);
-        textures[i].Bind();
+        textures[i].assign_unit(shader, (type + num).c_str(), i);
+        textures[i].bind();
     }
+
     // Take care of the camera Matrix
-    glUniform3f(glGetUniformLocation(shader.programID, "camPos"), camera.position.x, camera.position.y, camera.position.z);
+    glUniform3f(glGetUniformLocation(shader.programID, "camPos"), camera.P.x, camera.P.y, camera.P.z);
     camera.matrix(shader, "camMatrix");
 
     // Draw the actual mesh

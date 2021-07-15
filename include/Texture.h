@@ -11,20 +11,17 @@
 
 class Texture {
 public:
-    GLuint ID;
+
+    Texture(const char* _path, const char* _tex_type, GLenum _tex_id, GLenum _format, GLenum _data_type);
+
+    GLuint id;
     const char*  type;
-    GLuint unit;
+    GLuint tex_id;
 
-    Texture(const char* image, const char* texType, GLenum slot, GLenum format, GLenum pixelType);
-
-    // Assigns a texture unit to a texture
-    void texUnit(Shader& shader, const char* uniform, GLuint unit);
-    // Binds a texture
-    void Bind();
-    // Unbinds a texture
-    void Unbind();
-    // Deletes a texture
-    void Delete();
+    void assign_unit(Shader& shader, const char* uniform, GLuint tex_id);
+    void bind();
+    void unbind();
+    void del();
 };
 
 

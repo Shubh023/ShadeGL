@@ -14,10 +14,11 @@ class EBO
 public:
     explicit EBO(std::vector<GLuint>& indices);
 
+    void bind();
+    void unbind();
+    void del();
+
     GLuint ID;
-    void Bind();
-    void Unbind();
-    void Delete();
 };
 
 #endif //SHADEGL_EBO_H

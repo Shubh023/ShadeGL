@@ -19,19 +19,16 @@ public:
     Camera(int _width, int _height, glm::vec3 _position, float speed, float sensitivity);
 
     void matrix(Shader &shader, const char *uniform);
-    void inputs(GLFWwindow* window);
-    void updateMatrix(float fov, float nearPlane, float farPlane);
+    void movements(GLFWwindow* window);
+    void update(float fov, float near, float far);
 
-    // Attributes
-    glm::vec3 position;
-    glm::vec3 orientation = glm::vec3(0.0f, 0.0f, -1.0f);
-    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-    glm::mat4 cameraMatrix = glm::mat4(1.0f);
-    int width;
-    int height;
-    bool firstClick = true;
-    float speed = 0.1f;
-    float sensitivity = 100.f;
+    glm::vec3 P;
+    glm::vec3 O = glm::vec3(0.0f, 0.0f, -1.0f);
+    glm::vec3 U = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::mat4 CM = glm::mat4(1.0f);
+    int width, height;
+    bool initial = true;
+    float speed = 0.1f, sensitivity = 100.f;
 };
 
 

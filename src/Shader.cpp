@@ -6,7 +6,7 @@
 
 #include <utility>
 
-unsigned int Shader::CompileShader(unsigned int type, const std::string& source) {
+unsigned int Shader::compile(unsigned int type, const std::string& source) {
     unsigned int id = glCreateShader(type);
     const char* src = source.c_str();
     glShaderSource(id, 1, &src, nullptr);
@@ -65,8 +65,8 @@ Shader::Shader(const char* fragment, const char* vertex) {
 
     // Create Program and Compile Shaders
     unsigned int program = glCreateProgram();
-    unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
-    unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
+    unsigned int vs = compile(GL_VERTEX_SHADER, vertexShader);
+    unsigned int fs = compile(GL_FRAGMENT_SHADER, fragmentShader);
 
     glAttachShader(program, vs);
     glAttachShader(program, fs);

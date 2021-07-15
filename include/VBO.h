@@ -19,17 +19,13 @@ struct Vertex
 
 class VBO {
 public:
-    // Reference ID of the Vertex Buffer Object
-    GLuint ID;
-    // Constructor that generates a Vertex Buffer Object and links it to vertices
     explicit VBO(std::vector<Vertex>& vertices);
 
-    // Binds the VBO
-    void Bind() const;
-    // Unbinds the VBO
-    static void Unbind();
-    // Deletes the VBO
-    void Delete();
+    void bind() const;
+    static void unbind();
+    void del();
+
+    GLuint id;
 };
 
 #endif //SHADEGL_VBO_H

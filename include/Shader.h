@@ -8,24 +8,15 @@
 #include <ShadeGL.h>
 
 #include <utility>
+#include <vector>
 
 class Shader {
 public:
     Shader(const char* _fragment, const char* _vertex);
-    static unsigned int CompileShader(unsigned int type, const std::string& source);
-    void use() { glUseProgram(programID); };
-    void setBool(const std::string &name, bool value) const {
-        glUniform1i(glGetUniformLocation(programID, name.c_str()), (int)value);
-    }
-    void setInt(const std::string &name, int value) const {
-        glUniform1i(glGetUniformLocation(programID, name.c_str()), value);
-    }
-    void setFloat(const std::string &name, float value) const {
-        glUniform1f(glGetUniformLocation(programID, name.c_str()), value);
-    }
-    void Delete() {
-        glDeleteProgram(programID);
-    }
+
+    static unsigned int compile(unsigned int type, const std::string& source);
+    void use() const { glUseProgram(programID); };
+    void del() const { glDeleteProgram(programID); }
     unsigned int programID;
 };
 
