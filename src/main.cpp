@@ -6,7 +6,7 @@
 #include <models/skybox.h>
 
 #define ENABLE_SKYBOX 1
-#define ENABLE_FULLSCREEN 0
+#define ENABLE_FULLSCREEN 1
 #define VSYNC 1
 #define DAY 0
 
@@ -16,7 +16,7 @@ bool running, light_sel = false;
 unsigned int window_width = 1980;
 unsigned int window_height = 1080;
 
-unsigned int samples = 16;
+unsigned int samples = 8;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -425,6 +425,13 @@ int main() {
                 std::get<1>(c) = glm::translate(std::get<1>(c), std::get<3>(c));
                 glCheckError("toggle2");
             }
+            if (toggle == 3) {
+                std::get<3>(c).x += lightPos.x;
+                std::get<3>(c).z += 10 + lightPos.z;
+                glm::vec3 new_pos = 10.0f * glm::normalize(std::get<3>(c));
+                std::get<3>(c).y += ((10 + std::get<3>(c).x + std::get<3>(c).z) * 0.5) * sin(curr);
+                std::get<1>(c) = glm::translate(std::get<1>(c), new_pos);
+            }
             glUniformMatrix4fv(glGetUniformLocation(cube_shader.programID, "model"), 1, GL_FALSE,
                                glm::value_ptr(std::get<1>(c)));
             glUniform4f(glGetUniformLocation(cube_shader.programID, "cubeColor"), 255 * sin(lightPos.x),
@@ -530,6 +537,9 @@ void input() {
 
     if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) {
         toggle = 2;
+    }
+    if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) {
+        toggle = 3;
     }
 
     if (light_sel) {
